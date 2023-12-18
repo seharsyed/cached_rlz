@@ -15,12 +15,12 @@ std::vector<T> read_file(const char* filename) {
     const auto begin = ifs.tellg();
     ifs.seekg(0, std::ios::end);
     const auto end = ifs.tellg();
-    const std::int32_t len = (end - begin) / sizeof(T);
+    const std::size_t len = (end - begin) / sizeof(T);
     ifs.seekg(0);
 
     std::vector<T> v(len, 0);
 
-    for (std::int32_t i = 0; i < len; ++i) {
+    for (std::size_t i = 0; i < len; ++i) {
         ifs.read(reinterpret_cast<char*>(v.data() + i), sizeof(T));
     }
 
