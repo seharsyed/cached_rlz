@@ -22,12 +22,12 @@ int main(int argc, char* argv[]) {
 
     for (std::size_t i = 0; i < input_vec.size(); ++i) {
         if (rrlz.access(i) != input_vec[i]) {
-            std::cout << "i: " << i << " " << rrlz.access(i) << " != " << input_vec[i] << "\n";
+            std::cout << "i: " << i << " | " << rrlz.access(i) << " != " << input_vec[i] << "\n";
         }
     }
 
     if (argc == 5) {
-        std::ofstream ofs(argv[5]);
+        std::ofstream ofs(argv[4]);
         for (const auto& [start, pos, len] : res) {
             ofs << "(" << start << ", " << pos << ", " << len << ")\n";
         }

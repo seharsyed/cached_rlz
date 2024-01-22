@@ -18,10 +18,6 @@ struct random_access_rlz {
 
     std::vector<std::int64_t> relative_ref_ptrs;
 
-    std::vector<T> mismatch_symbol_vec;
-    std::vector<bool> mismatch;
-    std::vector<std::int64_t> mismatch_prefix_sums;
-
     random_access_rlz(const std::vector<T>& ref_vec,
                       const std::vector<std::tuple<std::size_t, std::size_t, std::size_t>>& spl_vec) : ref_vec(ref_vec) {
         const auto [last_start, last_pos, last_len] = spl_vec.back();
@@ -30,15 +26,8 @@ struct random_access_rlz {
 
         sdsl::sd_vector_builder starts_builder(decompressed_sz + 1, phrases + 1);
 
-        mismatch.assign(decompressed_sz, 0);
-
-        for (const auto& [start, pos, len] : spl_vec) {
+        for (const auto [start, pos, len] : spl_vec) {
             starts_builder.set(start);
-
-            if (len == 0) {
-                mismatch[start] = 1;
-                mismatch_symbol_vec.push_back(static_cast<T>(pos ^ (1ull << 63ull)));
-            }
         }
         starts_builder.set(decompressed_sz);
 
@@ -46,15 +35,19 @@ struct random_access_rlz {
         sdsl::util::init_support(this->starts_rs, &(this->starts));
         sdsl::util::init_support(this->starts_ss, &(this->starts));
 
-        mismatch_prefix_sums.assign(decompressed_sz, 0);
-        for (std::int64_t i = 1; i < decompressed_sz; ++i) {
-            this->mismatch_prefix_sums[i] = this->mismatch_prefix_sums[i - 1] + (this->mismatch[i - 1] ? 1 : 0);
-        }
-
         relative_ref_ptrs.assign(spl_vec.size(), 0);
         relative_ref_ptrs[0] = std::get<1>(spl_vec[0]);
         for (std::int64_t i = 1; i < spl_vec.size(); ++i) {
-            relative_ref_ptrs[i] = std::get<1>(spl_vec[i]) - length_cumulative_sum(i);
+            const auto [start, pos, len] = spl_vec[i];
+
+            if (len) {
+                relative_ref_ptrs[i] = static_cast<std::int64_t>(pos) - static_cast<std::int64_t>(length_cumulative_sum(i));
+            }
+            else {
+                const auto mismatched_symbol = static_cast<T>(pos ^ (1ull << 63ull));
+                this->ref_vec.push_back(mismatched_symbol);
+                relative_ref_ptrs[i] = static_cast<std::int64_t>(this->ref_vec.size() - 1) - static_cast<std::int64_t>(length_cumulative_sum(i));
+            }
         }
     }
 
@@ -88,12 +81,7 @@ struct random_access_rlz {
     }
 
     T access(const std::int64_t pos) const {
-        if (mismatch[pos]) {
-            return mismatch_symbol_vec[mismatch_prefix_sums[pos]];
-        }
-        else {
-            return ref_vec[relative_ref_ptrs[pos_to_phrase(pos)] + pos];
-        }
+        return ref_vec[relative_ref_ptrs[pos_to_phrase(pos)] + pos];
     }
 
     void get(const std::int64_t pos, const std::int64_t len, std::vector<T>& buf) const {
@@ -115,8 +103,6 @@ struct random_access_rlz {
             buf.push_back(sp);
             copied += to_copy;
             pos += to_copy;
-
         }
-
     }
 };
