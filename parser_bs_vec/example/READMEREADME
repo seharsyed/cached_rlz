@@ -1,0 +1,39 @@
+usage: ./rlzbyte64 {file of filenames}
+12 October, 2021
+----------------
+
+usage: ./rlzbyte64 {file of filenames}
+
+Above, "file of filenames" should contain two file names, one on each line. (An example called SARS.txt is included).
+The first file, e.g. X.txt, should contain the RLZ dictionary string (aka the reference string).
+The second file, e.g. Y.txt, should contain the string you want to factorize against the reference.
+
+The suffix array of the first file X.txt is expected to be present and should be called X.txt.sa.
+You can generate the suffix array for X.txt with the gensa program included in this package:
+./gensa ./X.txt ./X.txt.sa
+
+The rlzbyte64 program will only count the number of factors, not output them.
+The suffix array of the first file X.txt is expected to be present and should be called X.txt.sa.
+You can generate the suffix array for X.txt with the gensa program included in this package:
+./gensa ./X.txt ./X.txt.sa
+
+The rlzbyte64 program will only count the number of factors, not output them.!
+12 October, 2021
+----------------
+
+usage: ./rlzbyte64 {file of filenames}
+
+Above, "file of filenames" should contain two file names, one on each line. (An example called SARS.txt is included).
+The first file, e.g. X.txt, should contain the RLZ dictionary string (aka the reference string).
+The second file, e.g. Y.txt, should contain the string you want to factorize against the reference.
+
+The suffix array of the first file X.txt is expected to be present and should be called X.txt.sa.
+You can generate the suffix array for X.txt with the gensa program included in this package:
+./gensa ./X.txt ./X.txt.sa
+
+The rlzbyte64 program will only count the number of factors, not output them.
+The suffix array of the first file X.txt is expected to be present and should be called X.txt.sa.
+You can generate the suffix array for X.txt with the gensa program included in this package:
+./gensa ./X.txt ./X.txt.sa
+
+The rlzbyte64 program will only count the number of factors, not output them#
