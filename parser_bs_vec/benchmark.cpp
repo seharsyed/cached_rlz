@@ -36,12 +36,12 @@ double access_1_benchmark(const random_access_rlz<T>& rrlz, const std::size_t in
 template<typename T>
 double access_10_benchmark(const random_access_rlz<T>& rrlz, const std::size_t input_sz) {
     const auto sampling_positions = generate_sampling_positions(10'000, input_sz - 9);
+    std::vector<std::span<const T>> buf;
+    buf.reserve(10'000);
 
     auto start = std::chrono::high_resolution_clock::now();
     for (const auto pos : sampling_positions) {
-        for (std::size_t i = 0; i < 10; ++i) {
-            rrlz.access(pos + i);
-        }
+        rrlz.get_spans(pos, 10, buf);
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
@@ -51,12 +51,12 @@ double access_10_benchmark(const random_access_rlz<T>& rrlz, const std::size_t i
 template<typename T>
 double access_100_benchmark(const random_access_rlz<T>& rrlz, const std::size_t input_sz) {
     const auto sampling_positions = generate_sampling_positions(10'000, input_sz - 99);
+    std::vector<std::span<const T>> buf;
+    buf.reserve(10'000);
 
     auto start = std::chrono::high_resolution_clock::now();
     for (const auto pos : sampling_positions) {
-        for (std::size_t i = 0; i < 100; ++i) {
-            rrlz.access(pos + i);
-        }
+        rrlz.get_spans(pos, 100, buf);
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;

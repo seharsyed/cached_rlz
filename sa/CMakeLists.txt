@@ -3,3 +3,4 @@ project(sa)
 
 add_executable(sa suffix_array.cpp)
 target_compile_features(sa PUBLIC cxx_std_20)
+target_compile_options(sa PUBLIC -O3)
