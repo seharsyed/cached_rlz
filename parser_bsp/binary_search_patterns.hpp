@@ -122,6 +122,8 @@ class b_star_blocks {
     uint64_t node_count_;
 
    public:
+    b_star_blocks() : levels_(1) {}
+
     b_star_blocks(uint64_t* data, uint64_t n) : levels_(1) {
         std::vector<uint64_t> c_per_level;
         c_per_level.push_back(n);
@@ -142,6 +144,24 @@ class b_star_blocks {
 
     ~b_star_blocks() {
         free(nodes_);
+    }
+
+    void build(uint64_t* data, uint64_t n) {
+        std::vector<uint64_t> c_per_level;
+        c_per_level.push_back(n);
+        node_count_ = 1;
+        while (c_per_level.back() > block_size) {
+            uint64_t nn = c_per_level.back();
+            nn = nn / block_size + (nn % block_size ? 1 : 0);
+            node_count_ += nn;
+            c_per_level.push_back(nn);
+            levels_++;
+        }
+        nodes_ = (node*)malloc(node_count_ * sizeof(node));
+        uint64_t i_pos = 1;
+        uint64_t c_idx = 0;
+        nodes_[0] = node();
+        nodes_[0].build(i_pos, c_idx, n, c_per_level, nodes_, data);
     }
 
     std::pair<uint64_t, uint64_t> find(uint64_t q) const {
@@ -170,6 +190,8 @@ class heap_order_search {
    public:
     std::vector<uint64_t> items_;
     uint64_t n_;
+
+    heap_order_search() : items_(), n_(n - 1) {}
 
     heap_order_search(uint64_t* data, uint64_t n) : items_(), n_(n - 1) {
         items_.push_back(data[n / 2]);
@@ -201,6 +223,11 @@ class heap_order_search {
         } else {
             return {items_[i], b};
         }
+    }
+
+    void build(uint64_t* data, uint64_t n) {
+        items_.push_back(data[n / 2]);
+        build(0, 0, n - 1, data, false);
     }
 
     void print() {
