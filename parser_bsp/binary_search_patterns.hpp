@@ -191,7 +191,7 @@ class heap_order_search {
     std::vector<uint64_t> items_;
     uint64_t n_;
 
-    heap_order_search() : items_(), n_(n - 1) {}
+    heap_order_search() : items_() {}
 
     heap_order_search(uint64_t* data, uint64_t n) : items_(), n_(n - 1) {
         items_.push_back(data[n / 2]);
@@ -226,6 +226,7 @@ class heap_order_search {
     }
 
     void build(uint64_t* data, uint64_t n) {
+        n_ = n - 1;
         items_.push_back(data[n / 2]);
         build(0, 0, n - 1, data, false);
     }
