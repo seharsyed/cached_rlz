@@ -25,11 +25,15 @@ double access_1_benchmark(const random_access_rlz<T>& rrlz, const std::size_t in
     const auto sampling_positions = generate_sampling_positions(10'000, input_sz);
 
     auto start = std::chrono::high_resolution_clock::now();
+    std::size_t x = 0;
     for (const auto pos : sampling_positions) {
-        rrlz.access(pos);
+        x += static_cast<std::size_t>(rrlz.access(pos));
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::micro> duration = end - start;
+
+    std::cout << x << "\n";
+
     return duration.count();
 }
 
@@ -45,6 +49,9 @@ double access_10_benchmark(const random_access_rlz<T>& rrlz, const std::size_t i
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::micro> duration = end - start;
+
+    std::cout << buf.back().back() << "\n";
+
     return duration.count();
 }
 
@@ -60,6 +67,9 @@ double access_100_benchmark(const random_access_rlz<T>& rrlz, const std::size_t 
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::micro> duration = end - start;
+
+    std::cout << buf.back().back() << "\n";
+
     return duration.count();
 }
 
