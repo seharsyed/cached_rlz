@@ -58,6 +58,7 @@ struct random_access_rlz {
     std::size_t pos_to_phrase(const std::int64_t pos) const {
         return starts_rs.rank(pos + 1) - 1;
     }
+
     std::size_t phrase_length(const std::int64_t phrase) const {
         return length_cumulative_sum(phrase + 1) - length_cumulative_sum(phrase);
     }

@@ -7,9 +7,12 @@
 
 #include <cstdint>
 
+#include "binary_search_patterns.hpp"
+
 template<typename T>
 struct random_access_rlz {
-    std::vector<std::int64_t> starts;
+    b_heap_search<64> starts_search;
+    std::vector<std::uint64_t> starts;
     std::vector<T> ref_vec;
     std::vector<std::int64_t> relative_ref_ptrs;
 
@@ -25,6 +28,8 @@ struct random_access_rlz {
             starts.push_back(start);
         }
         starts.push_back(decompressed_sz);
+
+        starts_search.build(starts.data(), starts.size());
 
         relative_ref_ptrs.assign(spl_vec.size(), 0);
         relative_ref_ptrs[0] = std::get<1>(spl_vec[0]);
@@ -47,7 +52,8 @@ struct random_access_rlz {
     }
 
     std::size_t pos_to_phrase(const std::int64_t pos) const {
-        return std::distance(starts.begin(), std::lower_bound(starts.begin(), starts.end(), pos + 1)) - 1;
+        const auto [val, idx] = starts_search.find(pos + 1);
+        return idx;
     }
 
     std::size_t phrase_length(const std::int64_t phrase) const {
