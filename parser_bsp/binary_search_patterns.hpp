@@ -36,7 +36,7 @@ class control_binary_search {
         return {data_[a], a};
     }
 
-    uint64_t bytes() {
+    uint64_t bytes() const {
         return sizeof(control_binary_search) + n_ * sizeof(uint64_t);
     }
 };
@@ -181,7 +181,7 @@ class b_star_blocks {
         }
     }
 
-    uint64_t bytes() {
+    uint64_t bytes() const {
         return sizeof(b_star_blocks) + node_count_ * sizeof(node);
     }
 };
@@ -245,7 +245,7 @@ class heap_order_search {
         }
     }
 
-    uint64_t bytes() {
+    uint64_t bytes() const {
         return sizeof(heap_order_search) + items_.size() * sizeof(uint64_t);
     }
 
@@ -416,7 +416,7 @@ class b_heap_search {
         }
     }
 
-    uint64_t bytes() {
+    uint64_t bytes() const {
         return sizeof(b_heap_search) + node_count_ * sizeof(node);
     }
 };
