@@ -90,4 +90,5 @@ int main(int argc, char* argv[]) {
     std::cout << "Access length 10: " << access_10_benchmark(rrlz, input_vec.size()) << " milliseconds\n";
     std::cout << "Access length 100: " << access_100_benchmark(rrlz, input_vec.size()) << " milliseconds\n";
     std::cout << "Size of index in bytes: " << rrlz.size_in_bytes() << "\n";
+    std::cout << "Size of parsing: " << res.size() << "\n";
 }

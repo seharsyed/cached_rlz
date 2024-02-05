@@ -114,6 +114,6 @@ struct random_access_rlz {
     std::size_t size_in_bytes() const {
         return sizeof(T) * ref_vec.size()
             + sizeof(std::size_t) * ref_ptrs.size()
-            + starts.size() * 8;
+            + starts.size() / 8;
     }
 };
