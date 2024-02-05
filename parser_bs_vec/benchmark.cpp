@@ -30,7 +30,7 @@ double access_1_benchmark(const random_access_rlz<T>& rrlz, const std::size_t in
         x += static_cast<std::size_t>(rrlz.access(pos));
     }
     auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> duration = end - start;
+    std::chrono::duration<double, std::milli> duration = end - start;
 
     std::cout << x << "\n";
 
@@ -48,7 +48,7 @@ double access_10_benchmark(const random_access_rlz<T>& rrlz, const std::size_t i
         rrlz.get_spans(pos, 10, buf);
     }
     auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> duration = end - start;
+    std::chrono::duration<double, std::milli> duration = end - start;
 
     std::cout << buf.back().back() << "\n";
 
@@ -66,7 +66,7 @@ double access_100_benchmark(const random_access_rlz<T>& rrlz, const std::size_t 
         rrlz.get_spans(pos, 100, buf);
     }
     auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> duration = end - start;
+    std::chrono::duration<double, std::milli> duration = end - start;
 
     std::cout << buf.back().back() << "\n";
 
@@ -86,7 +86,9 @@ int main(int argc, char* argv[]) {
     auto res = lzFactorize<unsigned char, unsigned int>(input_vec.data(), input_vec.size(), ref_vec.data(), ref_vec.size(), sa_vec.data());
 
     random_access_rlz<unsigned char> rrlz(ref_vec, res);
-    std::cout << "Access length 1: " << access_1_benchmark(rrlz, input_vec.size()) << " microseconds\n";
-    std::cout << "Access length 10: " << access_10_benchmark(rrlz, input_vec.size()) << " microseconds\n";
-    std::cout << "Access length 100: " << access_100_benchmark(rrlz, input_vec.size()) << " microseconds\n";
+    std::cout << "Access length 1: " << access_1_benchmark(rrlz, input_vec.size()) << " milliseconds\n";
+    std::cout << "Access length 10: " << access_10_benchmark(rrlz, input_vec.size()) << " milliseconds\n";
+    std::cout << "Access length 100: " << access_100_benchmark(rrlz, input_vec.size()) << " milliseconds\n";
+    std::cout << "Size of index in bytes: " << rrlz.size_in_bytes() << "\n";
+    std::cout << "Size of parsing: " << res.size() << "\n";
 }
