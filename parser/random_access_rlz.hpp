@@ -18,8 +18,7 @@ struct random_access_rlz {
     std::vector<std::size_t> ref_ptrs;
 
     random_access_rlz(const std::vector<T>& ref_vec,
-                      const std::vector<std::tuple<std::size_t, std::size_t, std::size_t>>& spl_vec,
-                      std::size_t decompressed_sz) : ref_vec(ref_vec) {
+                      const std::vector<std::tuple<std::size_t, std::size_t, std::size_t>>& spl_vec) : ref_vec(ref_vec) {
         const auto [last_start, last_pos, last_len] = spl_vec.back();
         const std::size_t decompressed_sz = last_start + last_len;
         const std::size_t phrases = spl_vec.size();
