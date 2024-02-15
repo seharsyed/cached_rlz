@@ -20,7 +20,7 @@ std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> lzFactorizeColors
         for (auto& [start, pos, len] : res_vec) {
             start += cumulative_sz_sum;
         }
-        cumulative_sz_sum += res_vec.size();
+        cumulative_sz_sum += color_set.size();
         spl_vec.insert(spl_vec.end(), res_vec.begin(), res_vec.end());
     }
     ifs.close();
