@@ -1,0 +1,63 @@
+#pragma once
+
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <vector>
+
+#include <cstdint>
+
+template<typename T>
+std::vector<std::size_t> get_color_set_indices(const char* input_filename) {
+    std::vector<std::size_t> cs_indices;
+    std::size_t cs_index = 0;
+
+    std::ifstream ifs(input_filename, std::ios::binary);
+    for (; !ifs.eof(); ifs.peek()) {
+        cs_indices.push_back(cs_index);
+        T cs_sz = 0;
+        ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+        cs_index += static_cast<std::size_t>(1 + cs_sz); // size + colors
+        ifs.ignore(static_cast<std::size_t>(cs_sz));
+    }
+    cs_indices.push_back(cs_index);
+    ifs.close();
+
+    return cs_indices;
+}
+
+std::vector<std::size_t> generate_sampling_positions(const std::size_t n, const std::size_t sz, const std::size_t seed) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    gen.seed(seed);
+    std::uniform_int_distribution<std::size_t> distribution(0, sz - 1);
+
+    std::vector<std::size_t> sampling_positions;
+    sampling_positions.reserve(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        sampling_positions.push_back(distribution(gen));
+    }
+    std::sort(sampling_positions.begin(), sampling_positions.end());
+
+    return sampling_positions;
+}
+
+template<typename T>
+void generate_dictionary(const char* input_filename,
+                         const std::vector<std::size_t>& color_set_indices,
+                         const std::vector<std::size_t>& sampling_positions,
+                         const char* output_filename) {
+    std::ifstream ifs(input_filename, std::ios::binary);
+    std::ofstream ofs(output_filename, std::ios::binary);
+    for (std::size_t i = 0; i < sampling_positions.size(); ++i) {
+        ifs.seekg(color_set_indices[sampling_positions[i]] * sizeof(T));
+        T color_set_sz = 0;
+        ifs.read(reinterpret_cast<char*>(&color_set_sz), sizeof(T));
+        std::vector<T> color_set(color_set_sz, 0);
+        ifs.read(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
+        ofs.write(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
+    }
+    ifs.close();
+    ofs.close();
+}
