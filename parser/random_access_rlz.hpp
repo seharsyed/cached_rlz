@@ -24,78 +24,64 @@ struct random_access_rlz {
         const std::size_t phrases = spl_vec.size();
 
         sdsl::sd_vector_builder starts_builder(decompressed_sz + 1, phrases + 1);
-
+        ref_ptrs.reserve(spl_vec.size());
         for (const auto [start, pos, len] : spl_vec) {
             starts_builder.set(start);
+            ref_ptrs.push_back(pos);
         }
         starts_builder.set(decompressed_sz);
 
         starts = sdsl::sd_vector<>(starts_builder);
         sdsl::util::init_support(this->starts_rs, &(this->starts));
         sdsl::util::init_support(this->starts_ss, &(this->starts));
-
-        std::unordered_map<T, std::size_t> mismatch_map;
-        ref_ptrs.assign(spl_vec.size(), 0);
-        for (std::size_t i = 0; i < spl_vec.size(); ++i) {
-            const auto [start, pos, len] = spl_vec[i];
-
-            if (len) {
-                ref_ptrs[i] = pos;
-            } else {
-                const auto mismatched_symbol = static_cast<T>(pos ^ (1ull << 63ull));
-                if (mismatch_map.contains(mismatched_symbol)) {
-                    ref_ptrs[i] = mismatch_map.at(mismatched_symbol);
-                } else {
-                    this->ref_vec.push_back(mismatched_symbol);
-                    ref_ptrs[i] = this->ref_vec.size() - 1;
-                    mismatch_map.insert({mismatched_symbol, this->ref_vec.size() - 1});
-                }
-            }
-        }
     }
 
-    std::size_t length_cumulative_sum(const std::int64_t phrase) const {
+    std::size_t length_cumulative_sum(const std::size_t phrase) const {
         return starts_ss.select(phrase + 1);
     }
 
-    std::size_t pos_to_phrase(const std::int64_t pos) const {
+    std::size_t pos_to_phrase(const std::size_t pos) const {
         return starts_rs.rank(pos + 1) - 1;
     }
 
-    std::size_t phrase_length(const std::int64_t phrase) const {
+    std::size_t phrase_length(const std::size_t phrase) const {
         return length_cumulative_sum(phrase + 1) - length_cumulative_sum(phrase);
     }
 
-    std::size_t phrase_begin(const std::int64_t phrase) const {
+    std::size_t phrase_begin(const std::size_t phrase) const {
         return length_cumulative_sum(phrase);
     }
 
-    std::size_t phrase_end(const std::int64_t phrase) const {
+    std::size_t phrase_end(const std::size_t phrase) const {
         return length_cumulative_sum(phrase + 1);
     }
 
-    std::size_t pos_to_pos_in_ref(const std::int64_t pos) const {
+    std::size_t pos_to_pos_in_ref(const std::size_t pos) const {
         const auto phrase = pos_to_phrase(pos);
         return ref_ptrs[phrase] + pos - length_cumulative_sum(phrase);
     }
 
-    std::int64_t length_until_phrase_end(const std::int64_t pos) const {
+    std::size_t length_until_phrase_end(const std::size_t pos) const {
         const auto phrase = pos_to_phrase(pos);
         return length_cumulative_sum(phrase + 1) - pos;
     }
 
-    T access(const std::int64_t pos) const {
+    T access(const std::size_t pos) const {
         const auto phrase = pos_to_phrase(pos);
-        return ref_vec[ref_ptrs[phrase] + pos - length_cumulative_sum(phrase)];
+        if (phrase_length(phrase) > 1) {
+            return ref_vec[ref_ptrs[phrase] + pos - length_cumulative_sum(phrase)];
+        } else {
+            return static_cast<T>(ref_ptrs[phrase]);
+        }
     }
 
-    void get(const std::int64_t pos, const std::int64_t len, std::vector<T>& buf) const {
+    void get(const std::size_t pos, const std::size_t len, std::vector<T>& buf) const {
         for (std::size_t i = 0; i < len; ++i) {
             buf.push_back(access(pos + i));
         }
     }
 
-    void get_spans(std::int64_t pos, std::int64_t len, std::vector<std::span<const T>>& buf) const {
+    void get_spans(std::size_t pos, std::size_t len, std::vector<std::span<const T>>& buf) const {
         std::int64_t copied = 0;
         while (copied < len) {
             std::int64_t to_copy = length_until_phrase_end(pos);

@@ -119,18 +119,14 @@ std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> lzFactorize(const
     while (i < input_sz) {
         auto [pos, len] = computeLZFactorAt<T1, T2>(input, input_sz, ref, ref_sz, sa, i);
 
-        if (len == 0) {
-            pos = static_cast<std::size_t>(input[i]) | (1ull << 63ull);
+        if (len <= 1) {
+            pos = static_cast<std::size_t>(input[i]);
+            len = 1;
         }
 
         spl_vec.push_back({i, pos, len});
 
-        if (len == 0) {
-            ++i;
-        }
-        else {
-            i += len;
-        }
+        i += len;
     }
 
     return spl_vec;

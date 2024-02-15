@@ -13,3 +13,8 @@ add_executable(benchmark benchmark.cpp parser.hpp random_access_rlz.hpp)
 target_compile_features(benchmark PUBLIC cxx_std_20)
 target_compile_options(benchmark PUBLIC -O3)
 target_link_libraries(benchmark PRIVATE sdsl)
+
+add_executable(color_set_parser color_set_parser.cpp color_set_parser.hpp parser.hpp random_access_rlz.hpp)
+target_compile_features(color_set_parser PUBLIC cxx_std_20)
+target_compile_options(color_set_parser PUBLIC -O3)
+target_link_libraries(color_set_parser PRIVATE sdsl)
