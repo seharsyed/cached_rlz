@@ -19,5 +19,19 @@ int main(int argc, char* argv[]) {
 
     random_access_rlz<std::uint32_t> rrlz(ref_vec, res);
 
-    std::cout << rrlz.size_in_bytes() << "\n";
+    const auto [last_start, last_pos, last_len] = res.back();
+    const std::size_t decompressed_sz = last_start + last_len;
+    const auto avrg_phrase_len = static_cast<double>(decompressed_sz) / static_cast<double>(res.size());
+
+    std::size_t mismatches = 0;
+    for (const auto [start, pos, len] : res) {
+        if (len == 1) {
+            ++mismatches;
+        }
+    }
+
+    std::cout << "size of index: " << rrlz.size_in_bytes() << "\n";
+    std::cout << "number of phrases: " << res.size() << "\n";
+    std::cout << "average phrase length: " << avrg_phrase_len << "\n";
+    std::cout << "length 1 matches: " << mismatches << "\n";
 }
