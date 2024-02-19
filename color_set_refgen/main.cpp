@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <cstdint>
 
 #include "generate_dictionary.hpp"
@@ -14,6 +16,11 @@ int main(int argc, char* argv[]) {
     auto seed = static_cast<std::size_t>(std::atoi(argv[4]));
 
     const auto color_set_indices = get_color_set_indices<std::uint32_t>(input_filename);
+    if (n_samples > color_set_indices.size()) {
+        std::cerr << "Number of samples is grater than number of possible sampling positions!\n";
+        std::exit(EXIT_FAILURE);
+    }
+
     const auto sampling_positions = generate_sampling_positions(n_samples, color_set_indices.size(), seed);
     generate_dictionary<std::uint32_t>(input_filename, color_set_indices, sampling_positions, output_filename);
 }

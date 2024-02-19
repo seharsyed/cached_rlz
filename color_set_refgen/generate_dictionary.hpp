@@ -4,9 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <set>
 #include <vector>
-
-#include <cstdint>
 
 template<typename T>
 std::vector<std::size_t> get_color_set_indices(const char* input_filename) {
@@ -33,14 +32,19 @@ std::vector<std::size_t> generate_sampling_positions(const std::size_t n, const 
     gen.seed(seed);
     std::uniform_int_distribution<std::size_t> distribution(0, sz - 1);
 
-    std::vector<std::size_t> sampling_positions;
-    sampling_positions.reserve(n);
-    for (std::size_t i = 0; i < n; ++i) {
-        sampling_positions.push_back(distribution(gen));
+    std::set<std::size_t> sampling_positions;
+    while (sampling_positions.size() < n) {
+        sampling_positions.insert(distribution(gen));
     }
-    std::sort(sampling_positions.begin(), sampling_positions.end());
 
-    return sampling_positions;
+    std::vector<std::size_t> v;
+    v.reserve(n);
+
+    for (const auto e : sampling_positions) {
+        v.push_back(e);
+    }
+
+    return v;
 }
 
 template<typename T>
