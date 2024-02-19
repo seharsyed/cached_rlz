@@ -34,4 +34,13 @@ int main(int argc, char* argv[]) {
     std::cout << "number of phrases: " << res.size() << "\n";
     std::cout << "average phrase length: " << avrg_phrase_len << "\n";
     std::cout << "length 1 matches: " << mismatches << "\n";
+
+    if (argc == 5) {
+        std::ofstream ofs(argv[4]);
+        for (const auto& [start, pos, len] : res) {
+            ofs << start << " " << pos << " " << len << " " << rrlz.pos_to_phrase(start) << "\n";
+        }
+        ofs.close();
+    }
+
 }
