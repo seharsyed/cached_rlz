@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
     const auto color_set_indices = get_color_set_indices<std::uint32_t>(input_filename);
     if (n_samples > color_set_indices.size()) {
         std::cerr << "Number of samples is grater than number of possible sampling positions!\n";
+        std::cerr << "Number of possible sampling positions: " << color_set_indices.size() << "\n";
         std::exit(EXIT_FAILURE);
     }
 
