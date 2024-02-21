@@ -10,17 +10,26 @@
 template<typename T>
 std::vector<std::size_t> get_color_set_indices(const char* input_filename) {
     std::vector<std::size_t> cs_indices;
-    std::size_t cs_index = 0;
 
     std::ifstream ifs(input_filename, std::ios::binary);
-    for (; !ifs.eof(); ifs.peek()) {
-        cs_indices.push_back(cs_index);
-        T cs_sz = 0;
+    const auto begin = ifs.tellg();
+    ifs.seekg(0, std::ios::end);
+    const auto end = ifs.tellg();
+    const std::size_t file_length = end - begin;
+    ifs.seekg(0);
+    const std::size_t text_length = file_length / sizeof(T);
+
+    std::size_t i = 0;
+    while (i < text_length) {
+        cs_indices.push_back(i);
+        std::size_t cs_sz = 0;
         ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
-        cs_index += static_cast<std::size_t>(1 + cs_sz); // size + colors
-        ifs.ignore(static_cast<std::size_t>(cs_sz));
+        ++i;
+        for (std::size_t j = 0; j < cs_sz; ++j) {
+            ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+            ++i;
+        }
     }
-    cs_indices.push_back(cs_index);
     ifs.close();
 
     return cs_indices;
