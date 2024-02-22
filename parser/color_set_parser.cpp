@@ -30,7 +30,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << "size of index: " << rrlz.size_in_bytes() << "\n";
+    std::cout << "size of index: " << rrlz.size_in_bytes() << " bytes\n";
+    std::cout << "size of reference: " << rrlz.ref_vec.size() * sizeof(std::uint32_t) << " bytes\n";
+    std::cout << "size of reference pointers: " << rrlz.ref_ptrs.size() * sizeof(std::size_t) << " bytes\n";
+    std::cout << "size of starts: " << rrlz.starts.size() / 8 << " bytes\n";
     std::cout << "number of phrases: " << res.size() << "\n";
     std::cout << "average phrase length: " << avrg_phrase_len << "\n";
     std::cout << "length 1 matches: " << mismatches << "\n";
@@ -38,7 +41,7 @@ int main(int argc, char* argv[]) {
     if (argc == 5) {
         std::ofstream ofs(argv[4]);
         for (const auto& [start, pos, len] : res) {
-            ofs << start << " " << pos << " " << len << " " << rrlz.pos_to_phrase(start) << "\n";
+            ofs << pos << " " << len << "\n";
         }
         ofs.close();
     }
