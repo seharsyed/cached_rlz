@@ -27,8 +27,9 @@ std::vector<std::size_t> get_color_set_indices(const char* input_filename) {
         std::size_t cs_sz = 0;
         ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
         ++i;
+        T elem = 0;
         for (std::size_t j = 0; j < cs_sz; ++j) {
-            ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+            ifs.read(reinterpret_cast<char*>(&elem), sizeof(T));
             ++i;
         }
     }
@@ -55,8 +56,9 @@ std::vector<std::tuple<std::size_t, std::size_t>> get_color_set_indices_and_leng
         ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
         cs_indices.push_back({i, cs_sz});
         ++i;
+        T elem = 0;
         for (std::size_t j = 0; j < cs_sz; ++j) {
-            ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+            ifs.read(reinterpret_cast<char*>(&elem), sizeof(T));
             ++i;
         }
     }
@@ -133,4 +135,33 @@ void generate_subset(const char* input_filename,
     }
     ifs.close();
     ofs.close();
+}
+
+template<typename T>
+std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
+    std::vector<std::vector<T>> color_sets;
+
+    std::ifstream ifs(input_filename, std::ios::binary);
+    const auto begin = ifs.tellg();
+    ifs.seekg(0, std::ios::end);
+    const auto end = ifs.tellg();
+    const std::size_t file_length = end - begin;
+    ifs.seekg(0);
+    const std::size_t text_length = file_length / sizeof(T);
+
+    std::size_t i = 0;
+    while (i < text_length) {
+        std::size_t cs_sz = 0;
+        ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+        ++i;
+        std::vector<T> cs(cs_sz, 0);
+        for (std::size_t j = 0; j < cs_sz; ++j) {
+            ifs.read(reinterpret_cast<char*>(&cs[j]), sizeof(T));
+            ++i;
+        }
+        color_sets.push_back(cs);
+    }
+    ifs.close();
+
+    return color_sets;
 }
