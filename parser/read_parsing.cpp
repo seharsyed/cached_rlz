@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     auto ref_vec = read_file<std::uint32_t>(argv[1]);
     auto parsing_vec = read_file<std::size_t>(argv[2]);
     std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> spl_vec;
-    for (std::size_t i = 0; i < parsing_vec.size() / 3; ++i) {
+    for (std::size_t i = 0; i < parsing_vec.size(); i += 3) {
         const auto start = parsing_vec[i + 0];
         const auto pos = parsing_vec[i + 1];
         const auto len = parsing_vec[i + 2];
