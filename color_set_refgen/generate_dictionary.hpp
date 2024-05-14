@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <random>
 #include <set>
+#include <tuple>
 #include <vector>
 
 template<typename T>
@@ -24,6 +26,34 @@ std::vector<std::size_t> get_color_set_indices(const char* input_filename) {
         cs_indices.push_back(i);
         std::size_t cs_sz = 0;
         ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+        ++i;
+        for (std::size_t j = 0; j < cs_sz; ++j) {
+            ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+            ++i;
+        }
+    }
+    ifs.close();
+
+    return cs_indices;
+}
+
+template<typename T>
+std::vector<std::tuple<std::size_t, std::size_t>> get_color_set_indices_and_lengths(const char* input_filename) {
+    std::vector<std::tuple<std::size_t, std::size_t>> cs_indices;
+
+    std::ifstream ifs(input_filename, std::ios::binary);
+    const auto begin = ifs.tellg();
+    ifs.seekg(0, std::ios::end);
+    const auto end = ifs.tellg();
+    const std::size_t file_length = end - begin;
+    ifs.seekg(0);
+    const std::size_t text_length = file_length / sizeof(T);
+
+    std::size_t i = 0;
+    while (i < text_length) {
+        std::size_t cs_sz = 0;
+        ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
+        cs_indices.push_back({i, cs_sz});
         ++i;
         for (std::size_t j = 0; j < cs_sz; ++j) {
             ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
@@ -69,6 +99,36 @@ void generate_dictionary(const char* input_filename,
         ifs.read(reinterpret_cast<char*>(&color_set_sz), sizeof(T));
         std::vector<T> color_set(color_set_sz, 0);
         ifs.read(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
+        ofs.write(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
+    }
+    ifs.close();
+    ofs.close();
+}
+
+template<typename T>
+void generate_subset(const char* input_filename,
+                     const std::vector<std::tuple<std::size_t, std::size_t>>& color_set_indices_and_lengths,
+                     const std::vector<std::size_t>& sampling_positions,
+                     const char* output_filename) {
+    std::ifstream ifs(input_filename, std::ios::binary);
+    std::ofstream ofs(output_filename, std::ios::binary);
+
+    std::vector<std::tuple<std::size_t, std::size_t>> len_idx_vec;
+    for (std::size_t i = 0; i < sampling_positions.size(); ++i) {
+        const auto& [idx, len] = color_set_indices_and_lengths[sampling_positions[i]];
+        len_idx_vec.push_back({len, idx});
+    }
+
+    std::sort(len_idx_vec.begin(), len_idx_vec.end(), std::greater<std::tuple<std::size_t, std::size_t>>());
+
+    for (std::size_t i = 0; i < len_idx_vec.size(); ++i) {
+        const auto& [len, idx] = len_idx_vec[i];
+        ifs.seekg(idx * sizeof(T));
+        T color_set_sz = 0;
+        ifs.read(reinterpret_cast<char*>(&color_set_sz), sizeof(T));
+        std::vector<T> color_set(color_set_sz, 0);
+        ifs.read(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
+        ofs.write(reinterpret_cast<char*>(&color_set_sz), sizeof(T));
         ofs.write(reinterpret_cast<char*>(color_set.data()), sizeof(T) * color_set_sz);
     }
     ifs.close();
