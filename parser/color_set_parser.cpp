@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
             ++mismatches;
         } else {
             for (std::size_t i = 0; i < len; ++i) {
-                cov_bv[pos + i] = 1;
+                cov_bv[start + i] = 1;
             }
         }
     }
@@ -61,5 +61,4 @@ int main(int argc, char* argv[]) {
         }
         ofs.close();
     }
-
 }
