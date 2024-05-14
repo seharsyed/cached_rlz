@@ -1,6 +1,9 @@
 #include <iostream>
+#include <vector>
 
 #include <cstdint>
+
+#include <sdsl/int_vector.hpp>
 
 #include "color_set_parser.hpp"
 #include "random_access_rlz.hpp"
@@ -24,11 +27,23 @@ int main(int argc, char* argv[]) {
     const auto avrg_phrase_len = static_cast<double>(decompressed_sz) / static_cast<double>(res.size());
 
     std::size_t mismatches = 0;
+    sdsl::bit_vector cov_bv(ref_vec.size());
     for (const auto [start, pos, len] : res) {
         if (len == 1) {
             ++mismatches;
+        } else {
+            for (std::size_t i = 0; i < len; ++i) {
+                cov_bv[pos + i] = 1;
+            }
         }
     }
+
+    std::size_t ones = 0;
+    for (const auto& b : cov_bv) {
+        ones += b;
+    }
+
+    const double coverage = static_cast<double>(ones) / static_cast<double>(ref_vec.size());
 
     std::cout << "size of index: " << rrlz.size_in_bytes() << " bytes\n";
     std::cout << "size of reference: " << rrlz.ref_vec.size() * sizeof(std::uint32_t) << " bytes\n";
@@ -37,6 +52,7 @@ int main(int argc, char* argv[]) {
     std::cout << "number of phrases: " << res.size() << "\n";
     std::cout << "average phrase length: " << avrg_phrase_len << "\n";
     std::cout << "length 1 matches: " << mismatches << "\n";
+    std::cout << "reference covered: " << coverage << "\n";
 
     if (argc == 5) {
         std::ofstream ofs(argv[4]);
