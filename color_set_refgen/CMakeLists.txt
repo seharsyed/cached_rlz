@@ -12,3 +12,7 @@ target_compile_options(ssgen PUBLIC -O3)
 add_executable(sscount count_subsets.cpp generate_dictionary.hpp)
 target_compile_features(sscount PUBLIC cxx_std_20)
 target_compile_options(sscount PUBLIC -O3)
+
+add_executable(sstrcount count_substrings.cpp generate_dictionary.hpp)
+target_compile_features(sstrcount PUBLIC cxx_std_20)
+target_compile_options(sstrcount PUBLIC -O3)
