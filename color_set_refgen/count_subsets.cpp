@@ -5,8 +5,6 @@
 
 #include "generate_dictionary.hpp"
 
-// TODO:
-// count n.o. bits it takes to encode a subset
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::fprintf(stderr, "usage: %s [input file]\n", argv[0]);
