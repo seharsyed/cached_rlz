@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         }
 
         auto& color_set = color_sets[i];
-        uint32_t color_set_sz = static_cast<std::uint32_t>(color_set.size());
+        const std::size_t color_set_sz = color_set.size();
 
         ofs.write(reinterpret_cast<char*>(color_set.data()), sizeof(std::uint32_t) * color_set_sz);
     }
