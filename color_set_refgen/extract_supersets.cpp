@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     std::cout << "number of subsets: " << ssn << "\n";
     std::cout << "number of bits to encode subsets: " << nb << "\n";
 
-    std::ofstream ofs(argv[1], std::ios::binary);
+    std::ofstream ofs(argv[2], std::ios::binary);
     for (std::size_t i = 0; i < color_sets.size(); ++i) {
         if (skip_vec[i]) {
             continue;
