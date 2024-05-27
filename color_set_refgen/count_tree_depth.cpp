@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     std::vector<bool> leaf_vec(color_sets.size(), true);
 
     #pragma omp parallel for schedule(dynamic, 1) shared(rse, nb, root_vec, ancestor_vec, leaf_vec)
-    for (std::int64_t i = static_cast<std::int64_t>(color_sets.size()); i >= 0; --i) {
+    for (std::int64_t i = static_cast<std::int64_t>(color_sets.size()) - 1; i >= 0; --i) {
         const auto& s1 = color_sets[i];
 
         if (root_vec[i] == -1) {
