@@ -33,7 +33,12 @@ add_executable(sscount_asc count_subsets_asc.cpp generate_dictionary.hpp)
 target_compile_features(sscount_asc PUBLIC cxx_std_20)
 target_compile_options(sscount_asc PUBLIC -O3)
 
+add_executable(tdcount count_tree_depth.cpp generate_dictionary.hpp)
+target_compile_features(tdcount PUBLIC cxx_std_20)
+target_compile_options(tdcount PUBLIC -O3)
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(sscount PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(sscount PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(tdcount PUBLIC OpenMP::OpenMP_CXX)
 endif()
