@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
                 {
                     ++ssn;
                     nb += s2.size();
-                    root_vec[j] = false;
+                    root_vec[i] = false;
                     if (tree_depths[j] <= tree_depths[i]) {
                         tree_depths[j] = tree_depths[i] + 1;
                     }
