@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
 
     const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
     std::vector<bool> root_vec(color_sets.size(), true);
-    std::vector<std::int32_t> tree_depths(color_sets.size(), 0);
+    std::vector<std::int32_t> tree_depths(color_sets.size(), 1);
 
     std::size_t ssn = 0;
     std::size_t nb = 0;
@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
 
     for (std::size_t i = 0; i < tree_depths.size(); ++i) {
         if (root_vec[i]) {
+            rse += color_sets[i].size();
             dcs += tree_depths[i];
             ++nt;
         }
