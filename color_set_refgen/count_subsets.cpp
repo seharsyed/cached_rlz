@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     std::size_t ssn = 0;
     std::size_t nb = 0;
 
-    #pragma omp parallel for schedule(dynamic, 1) shared(ssn, nb, skip_vec)
+    #pragma omp parallel for schedule(dynamic, 1) shared(color_sets, ssn, nb, skip_vec)
     for (std::size_t i = 0; i < color_sets.size(); ++i) {
         if (skip_vec[i]) {
             continue;
@@ -41,7 +41,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    std::size_t rse = 0;
+    #pragma omp parallel for reduction(+ : rse)
+    for (std::size_t i = 0; i < skip_vec.size(); ++i) {
+        rse += skip_vec[i] ? 0 : color_sets[i].size();
+    }
+
     std::cout << "number of sets: " << color_sets.size() << "\n";
     std::cout << "number of subsets: " << ssn << "\n";
     std::cout << "number of bits to encode subsets: " << nb << "\n";
+    std::cout << "total size of root sets: " << rse << "\n";
 }
