@@ -44,7 +44,7 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
 }
 
 static inline std::size_t bits_required(const std::size_t x) {
-    return std::max(static_cast<std::size_t>(std::bit_width(x)), 1uz);
+    return std::max(static_cast<std::size_t>(std::bit_width(x)), static_cast<std::size_t>(1));
 }
 
 std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std::uint32_t>>& color_sets,
