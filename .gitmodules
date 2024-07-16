@@ -1,3 +1,6 @@
 [submodule "parser/external/sdsl-lite"]
 	path = parser/external/sdsl-lite
 	url = https://github.com/simongog/sdsl-lite.git
+[submodule "new_ds/external/sdsl-lite"]
+	path = new_ds/external/sdsl-lite
+	url = https://github.com/iosfwd/sdsl-lite
