@@ -44,7 +44,7 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
 }
 
 static inline std::size_t bits_required(const std::size_t x) {
-    return std::max(std::bit_width(x), 1ull);
+    return std::max(static_cast<std::size_t>(std::bit_width(x)), 1ull);
 }
 
 std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std::uint32_t>>& color_sets,
@@ -74,9 +74,9 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
             }
 
             if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
-                #pragma omp const
+                #pragma omp critical
                 {
-                    critical std::int64_t sparse_bits = s1.size() * enc_width;
+                    const std::int64_t sparse_bits = s1.size() * enc_width;
                     const std::int64_t dense_bits = s2.size();
 
                     if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
