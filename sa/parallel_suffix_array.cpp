@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "parallel_quicksort.hpp"
+
 template<typename T>
 std::vector<T> read_file(const char* filename) {
     std::ifstream ifs(filename, std::ios::binary);
@@ -40,6 +42,7 @@ std::vector<T1> prefix_doubling(const T2* s, const std::size_t n) {
     std::vector<std::array<std::size_t, 3>> v(n, {0, 0, 0});
 
     for (std::size_t len = 1; len <= n; len <<= 1) {
+        #pragma omp parallel for
         for (std::size_t i = 0; i < n; ++i) {
             if (i + len < n) {
                 v[i][0] = w[i];
@@ -52,7 +55,9 @@ std::vector<T1> prefix_doubling(const T2* s, const std::size_t n) {
             }
         }
 
-        std::sort(v.begin(), v.end());
+        #pragma omp parallel
+        #pragma omp single
+        quicksort(0, v.size(), v.data());
 
         std::size_t name = 1;
         for (std::size_t i = 0; i < n; ++i) {
