@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <iterator>
 
 template<typename T>
 T median5(const T a, const T b, const T c, const T d, const T e) {
