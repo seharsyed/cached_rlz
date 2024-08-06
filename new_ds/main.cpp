@@ -36,7 +36,7 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
             ifs.read(reinterpret_cast<char*>(&cs[j]), sizeof(T));
             ++i;
         }
-        color_sets.push_back(cs);
+        color_sets.push_back(std::move(cs));
     }
     ifs.close();
 
@@ -339,6 +339,9 @@ int main(int argc, char* argv[]) {
     const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
     const std::int32_t depth_limit = std::stoi(argv[2]);
     const std::int64_t enc_width = std::stoull(argv[3]);
+
+    std::cout << "depth limit: " << depth_limit << "\n";
+    std::cout << "encoding width: " << enc_width << "\n";
 
     const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
 
