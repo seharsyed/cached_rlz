@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     const auto avrg_phrase_len = static_cast<double>(decompressed_sz) / static_cast<double>(res.size());
 
     std::size_t mismatches = 0;
-    sdsl::bit_vector cov_bv(ref_vec.size());
+    sdsl::bit_vector cov_bv(input_vec.size());
     for (const auto [start, pos, len] : res) {
         if (len == 1) {
             ++mismatches;
