@@ -105,6 +105,10 @@ struct ds {
         return dense_count() + sparse_count();
     }
 
+    std::int64_t size() const {
+        return dense_count() + sparse_count() + subset_count();
+    }
+
     std::int64_t dense_idx(const std::int64_t idx) const {
         return idx;
     }

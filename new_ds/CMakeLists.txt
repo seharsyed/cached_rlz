@@ -10,7 +10,13 @@ target_compile_features(main PRIVATE cxx_std_20)
 target_compile_options(main PRIVATE -O3)
 target_link_libraries(main PRIVATE sdsl)
 
+add_executable(benchmark benchmark.cpp)
+target_compile_features(benchmark PRIVATE cxx_std_20)
+target_compile_options(benchmark PRIVATE -O3)
+target_link_libraries(benchmark PRIVATE sdsl)
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(main PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(benchmark PUBLIC OpenMP::OpenMP_CXX)
 endif()
