@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     auto ref_vec = read_file<unsigned char>(argv[1]);
     auto sa_vec = read_file<unsigned int>(argv[2]);
     auto input_vec = read_file<unsigned char>(argv[3]);
-    auto res = lzFactorize<decltype(input_vec)::value_type, decltype(sa_vec)::value_type>(input_vec.data(), input_vec.size(), ref_vec.data(), ref_vec.size(), sa_vec.data());
+    auto res = lzFactorize<decltype(ref_vec)::value_type, decltype(sa_vec)::value_type>(input_vec, ref_vec, sa_vec);
     random_access_rlz<unsigned char> rrlz(ref_vec, res);
 
     const auto [last_start, last_pos, last_len] = res.back();
@@ -25,16 +25,21 @@ int main(int argc, char* argv[]) {
     const auto avrg_phrase_len = static_cast<double>(decompressed_sz) / static_cast<double>(res.size());
 
     std::size_t mismatches = 0;
-    sdsl::bit_vector cov_bv(input_vec.size());
+    sdsl::bit_vector cov_bv(ref_vec.size());
     for (const auto [start, pos, len] : res) {
         if (len == 1) {
             ++mismatches;
         } else {
-            for (std::size_t i = 0; i < len; ++i) {
-                cov_bv[pos + i] = 1;
+            if (pos + len > ref_vec.size()) {
+                std::cout << "pos + len >= ref_vec.size(): " << (pos + len) << "\n";
+            } else {
+                for (std::size_t i = 0; i < len; ++i) {
+                    cov_bv[pos + i] = 1;
+                }
             }
         }
     }
+
 
     std::size_t ones = 0;
     for (const auto& b : cov_bv) {
@@ -44,7 +49,7 @@ int main(int argc, char* argv[]) {
     const double coverage = static_cast<double>(ones) / static_cast<double>(ref_vec.size());
 
     std::cout << "size of index: " << rrlz.size_in_bytes() << " bytes\n";
-    std::cout << "size of reference: " << rrlz.ref_vec.size() * sizeof(std::uint32_t) << " bytes\n";
+    std::cout << "size of reference: " << rrlz.ref_vec.size() * sizeof(decltype(ref_vec)::value_type) << " bytes\n";
     std::cout << "size of reference pointers: " << rrlz.ref_ptrs.size() * sizeof(std::size_t) << " bytes\n";
     std::cout << "size of starts: " << rrlz.starts.size() / 8 << " bytes\n";
     std::cout << "number of phrases: " << res.size() << "\n";
@@ -52,11 +57,11 @@ int main(int argc, char* argv[]) {
     std::cout << "length 1 matches: " << mismatches << "\n";
     std::cout << "reference covered: " << coverage << "\n";
 
-    // for (std::size_t i = 0; i < input_vec.size(); ++i) {
-    //     if (rrlz.access(i) != input_vec[i]) {
-    //         std::cout << "i: " << i << " | " << rrlz.access(i) << " != " << input_vec[i] << "\n";
-    //     }
-    // }
+    for (std::size_t i = 0; i < input_vec.size(); ++i) {
+        if (rrlz.access(i) != input_vec[i]) {
+            std::cout << "i: " << i << " | " << rrlz.access(i) << " != " << input_vec[i] << "\n";
+        }
+    }
 
     if (argc == 5) {
         std::ofstream ofs(argv[4]);

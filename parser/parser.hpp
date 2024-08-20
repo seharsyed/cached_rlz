@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -27,20 +28,26 @@ std::vector<T> read_file(const char* filename) {
 }
 
 template<typename T1, typename T2>
-inline std::int64_t binarySearchLB(const T1* ref, const T2* sa,
-                                   std::int64_t lo, std::int64_t hi, const std::int64_t offset, const T1 c) {
-    std::int64_t low = lo, high = hi;
+inline std::optional<std::size_t> binarySearchLB(const std::vector<T1>& ref, const std::vector<T2>& sa,
+                                                 const std::size_t lo, const std::size_t hi,
+                                                 const std::size_t offset, const T1 c) {
+    std::size_t low = lo;
+    std::size_t high = hi;
+
     while (low <= high) {
-        std::int64_t mid = (low + high) >> 1;
-        T1 midVal = ref[sa[mid] + offset];
-        if (midVal < c)
+        const std::size_t mid = (low + high) >> 1;
+        const auto midVal = ref.at(sa.at(mid) + offset);
+
+        if (midVal < c) {
             low = mid + 1;
-        else if (midVal > c)
+        } else if (midVal > c) {
             high = mid - 1;
-        else { //midVal == c
-            if (mid == lo)
+        } else { //midVal == c
+            if (mid == lo) {
                 return mid; // leftmost occ of key found
-            T1 midValLeft = ref[sa[mid - 1] + offset];
+            }
+
+            const auto midValLeft = ref.at(sa.at(mid - 1) + offset);
             if (midValLeft == midVal) {
                 high = mid - 1; //discard mid and the ones to the right of mid
             } else { //midValLeft must be less than midVal == c
@@ -48,24 +55,31 @@ inline std::int64_t binarySearchLB(const T1* ref, const T2* sa,
             }
         }
     }
-    return -(low + 1);  // key not found.
+
+    return {}; // key not found.
 }
 
 template<typename T1, typename T2>
-inline std::int64_t binarySearchRB(const T1* ref, const T2* sa,
-                                   std::int64_t lo, std::int64_t hi, const std::int64_t offset, const T1 c) {
-    std::int64_t low = lo, high = hi;
+inline std::optional<std::size_t> binarySearchRB(const std::vector<T1>& ref, const std::vector<T2>& sa,
+                                                 const std::size_t lo, const std::size_t hi,
+                                                 const std::size_t offset, const T1 c) {
+    std::size_t low = lo;
+    std::size_t high = hi;
+
     while (low <= high) {
-        std::int64_t mid = (low + high) >> 1;
-        T1 midVal = ref[sa[mid] + offset];
-        if (midVal < c)
+        const std::size_t mid = (low + high) >> 1;
+        const auto midVal = ref.at(sa.at(mid) + offset);
+
+        if (midVal < c) {
             low = mid + 1;
-        else if (midVal > c)
+        } else if (midVal > c) {
             high = mid - 1;
-        else { //midVal == c
-            if (mid == hi)
+        } else { //midVal == c
+            if (mid == hi) {
                 return mid; // rightmost occ of key found
-            T1 midValRight = ref[sa[mid + 1] + offset];
+            }
+
+            const auto midValRight = ref.at(sa.at(mid + 1) + offset);
             if (midValRight == midVal) {
                 low = mid + 1; //discard mid and the ones to the left of mid
             } else { //midValRight must be greater than midVal == c
@@ -73,32 +87,39 @@ inline std::int64_t binarySearchRB(const T1* ref, const T2* sa,
             }
         }
     }
-    return -(low + 1);  // key not found.
+    return {}; // key not found.
 }
 
 template<typename T1, typename T2>
-std::pair<std::size_t, std::size_t> computeLZFactorAt(const T1* input, const std::size_t input_sz,
-                                                      const T1* ref, const std::size_t ref_sz,
-                                                      const T2* sa, const std::size_t input_pos) {
+std::tuple<std::size_t, std::size_t> computeLZFactorAt(const std::vector<T1>& input,
+                                                       const std::vector<T1>& ref,
+                                                       const std::vector<T2>& sa,
+                                                       const std::size_t input_pos) {
     std::size_t offset = 0;
     std::size_t j = input_pos;
 
     std::size_t match = 0;
-    std::int64_t nlb = 0;
-    std::int64_t nrb = ref_sz - 1;
+    std::size_t nlb = 0;
+    std::size_t nrb = ref.size() - 1;
 
-    while (j < input_sz) {
+    while (j < input.size()) {
         if (nlb == nrb) {
             if (ref[sa[nlb] + offset] != input[j]) {
                 break;
             }
         }
         else {
-            nlb = binarySearchLB<T1, T2>(ref, sa, nlb, nrb, offset, input[j]);
-            if (nlb < 0) {
+            if (const auto opt = binarySearchLB<T1, T2>(ref, sa, nlb, nrb, offset, input.at(j))) {
+                nlb = opt.value();
+            } else {
                 break;
             }
-            nrb = binarySearchRB<T1, T2>(ref, sa, nlb, nrb, offset, input[j]);
+
+            if (const auto opt = binarySearchRB<T1, T2>(ref, sa, nlb, nrb, offset, input.at(j))) {
+                nrb = opt.value();
+            } else {
+                break;
+            }
         }
 
         match = sa[nlb];
@@ -106,21 +127,21 @@ std::pair<std::size_t, std::size_t> computeLZFactorAt(const T1* input, const std
         ++offset;
     }
 
-    return std::make_pair(match, offset);
+    return {match, offset};
 }
 
 template<typename T1, typename T2>
-std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> lzFactorize(const T1* input, const std::size_t input_sz,
-                                                                           const T1* ref, const std::size_t ref_sz,
-                                                                           const T2* sa) {
+std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> lzFactorize(const std::vector<T1>& input,
+                                                                           const std::vector<T1>& ref,
+                                                                           const std::vector<T2>& sa) {
     std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> spl_vec;
     std::size_t i = 0;
 
-    while (i < input_sz) {
-        auto [pos, len] = computeLZFactorAt<T1, T2>(input, input_sz, ref, ref_sz, sa, i);
+    while (i < input.size()) {
+        auto [pos, len] = computeLZFactorAt<T1, T2>(input, ref, sa, i);
 
         if (len <= 1) {
-            pos = static_cast<std::size_t>(input[i]);
+            pos = static_cast<std::size_t>(input.at(i));
             len = 1;
         }
 
