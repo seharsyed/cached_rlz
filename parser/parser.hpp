@@ -109,13 +109,13 @@ std::tuple<std::size_t, std::size_t> computeLZFactorAt(const std::vector<T1>& in
             }
         }
         else {
-            if (const auto opt = binarySearchLB<T1, T2>(ref, sa, nlb, nrb, offset, input.at(j))) {
+            if (const auto opt = binarySearchLB(ref, sa, nlb, nrb, offset, input.at(j))) {
                 nlb = opt.value();
             } else {
                 break;
             }
 
-            if (const auto opt = binarySearchRB<T1, T2>(ref, sa, nlb, nrb, offset, input.at(j))) {
+            if (const auto opt = binarySearchRB(ref, sa, nlb, nrb, offset, input.at(j))) {
                 nrb = opt.value();
             } else {
                 break;
@@ -138,7 +138,7 @@ std::vector<std::tuple<std::size_t, std::size_t, std::size_t>> lzFactorize(const
     std::size_t i = 0;
 
     while (i < input.size()) {
-        auto [pos, len] = computeLZFactorAt<T1, T2>(input, ref, sa, i);
+        auto [pos, len] = computeLZFactorAt(input, ref, sa, i);
 
         if (len <= 1) {
             pos = static_cast<std::size_t>(input.at(i));
