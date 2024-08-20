@@ -6,8 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include <iostream>
-
 template<typename T>
 std::vector<T> read_file(const char* filename) {
     std::ifstream ifs(filename, std::ios::binary);
