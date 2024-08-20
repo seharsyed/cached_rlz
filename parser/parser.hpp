@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 template<typename T>
 std::vector<T> read_file(const char* filename) {
     std::ifstream ifs(filename, std::ios::binary);
@@ -28,14 +30,14 @@ std::vector<T> read_file(const char* filename) {
 }
 
 template<typename T1, typename T2>
-inline std::optional<std::size_t> binarySearchLB(const std::vector<T1>& ref, const std::vector<T2>& sa,
-                                                 const std::size_t lo, const std::size_t hi,
-                                                 const std::size_t offset, const T1 c) {
-    std::size_t low = lo;
-    std::size_t high = hi;
+inline std::optional<std::int64_t> binarySearchLB(const std::vector<T1>& ref, const std::vector<T2>& sa,
+                                                 const std::int64_t lo, const std::int64_t hi,
+                                                 const std::int64_t offset, const T1 c) {
+    std::int64_t low = lo;
+    std::int64_t high = hi;
 
     while (low <= high) {
-        const std::size_t mid = (low + high) >> 1;
+        const std::int64_t mid = low + (high - low) / 2;
         const auto midVal = ref.at(sa.at(mid) + offset);
 
         if (midVal < c) {
@@ -60,14 +62,14 @@ inline std::optional<std::size_t> binarySearchLB(const std::vector<T1>& ref, con
 }
 
 template<typename T1, typename T2>
-inline std::optional<std::size_t> binarySearchRB(const std::vector<T1>& ref, const std::vector<T2>& sa,
-                                                 const std::size_t lo, const std::size_t hi,
-                                                 const std::size_t offset, const T1 c) {
-    std::size_t low = lo;
-    std::size_t high = hi;
+inline std::optional<std::int64_t> binarySearchRB(const std::vector<T1>& ref, const std::vector<T2>& sa,
+                                                 const std::int64_t lo, const std::int64_t hi,
+                                                 const std::int64_t offset, const T1 c) {
+    std::int64_t low = lo;
+    std::int64_t high = hi;
 
     while (low <= high) {
-        const std::size_t mid = (low + high) >> 1;
+        const std::int64_t mid = low + (high - low) / 2;
         const auto midVal = ref.at(sa.at(mid) + offset);
 
         if (midVal < c) {
