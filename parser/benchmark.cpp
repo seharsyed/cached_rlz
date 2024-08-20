@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     auto ref_vec = read_file<unsigned char>(argv[1]);
     auto sa_vec = read_file<unsigned int>(argv[2]);
     auto input_vec = read_file<unsigned char>(argv[3]);
-    auto res = lzFactorize<decltype(ref_vec)::value_type, decltype(sa_vec)::value_type>(input_vec, ref_vec, sa_vec);
+    auto res = lzFactorize(input_vec, ref_vec, sa_vec);
 
     random_access_rlz<unsigned char> rrlz(ref_vec, res);
     std::cout << "Access length 1: " << access_1_benchmark(rrlz, input_vec.size()) << " milliseconds\n";

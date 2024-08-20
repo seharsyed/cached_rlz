@@ -17,8 +17,8 @@ output anything if uncompressed data can be recreated from compressed
 data. Optionally outputs `(source position, reference position,
 length)`-triplets if output file is supplied.
 
-Mismatches have the mismatched symbol with the highest bit on placed
-in the reference position field instead of an actual reference position.
+Mismatches or matches of length 1 have the symbol embedded in the
+reference pointer.
 
 The function `lzFactorize<T1, T2>(…)` takes the type of data as
 template parameter `T1` and the type of suffix array as template
