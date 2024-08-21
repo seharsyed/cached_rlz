@@ -331,8 +331,8 @@ void test_run() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        std::fprintf(stderr, "usage: %s [input file] [depth limit] [int encoding width]\n", argv[0]);
+    if (argc != 5) {
+        std::fprintf(stderr, "usage: %s [input file] [depth limit] [int encoding width] [output file]\n", argv[0]);
         std::exit(EXIT_FAILURE);
     }
 
@@ -354,4 +354,9 @@ int main(int argc, char* argv[]) {
     std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
     std::cout << "\n";
     std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+
+    std::ofstream ofs(argv[4]);
+    const auto bw = d.serialize(ofs);
+    std::cout << "bytes written: " << bw << "\n";
+    ofs.close();
 }

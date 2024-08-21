@@ -20,6 +20,8 @@ struct ds {
     sdsl::int_vector<> subset_starts;
     sdsl::int_vector<> ancestor_ptrs;
 
+    ds() {}
+
     ds(const sdsl::bit_vector& dense_container,
        const sdsl::int_vector<>& dense_starts,
        const sdsl::int_vector<>& sparse_container,

@@ -368,31 +368,18 @@ void test_run() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        std::fprintf(stderr, "usage: %s [input file] [depth limit] [int encoding width] [number of accesses]\n", argv[0]);
+    if (argc != 3) {
+        std::fprintf(stderr, "usage: %s [input file] [number of accesses]\n", argv[0]);
         std::exit(EXIT_FAILURE);
     }
 
-    const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
-    const std::int32_t depth_limit = std::stoi(argv[2]);
-    const std::int64_t enc_width = std::stoull(argv[3]);
-    const std::int64_t accesses = std::stoull(argv[4]);
+    std::ifstream ifs(argv[1]);
 
-    std::cout << "depth limit: " << depth_limit << "\n";
-    std::cout << "encoding width: " << enc_width << "\n";
+    ds d;
+    d.load(ifs);
+    ifs.close();
 
-    const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
-
-    std::cout << "d.size() "                  << d.size()                  << "\n";
-    std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
-    std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
-    std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
-    std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
-    std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
-    std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
-    std::cout << "\n";
-    std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+    const std::int64_t accesses = std::stoull(argv[2]);
 
     const auto duration = extract_benchmark(d, d.size(), accesses);
     std::cout << accesses << " accesses took: " <<  duration << " milliseconds\n";
