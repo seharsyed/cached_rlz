@@ -7,6 +7,7 @@
 #include <tuple>
 #include <vector>
 
+#include <cassert>
 #include <cstdint>
 
 #include <sdsl/bit_vectors.hpp>
@@ -36,7 +37,7 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
             ifs.read(reinterpret_cast<char*>(&cs[j]), sizeof(T));
             ++i;
         }
-        color_sets.push_back(std::move(cs));
+        color_sets.push_back(cs);
     }
     ifs.close();
 
@@ -54,8 +55,6 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     std::vector<std::int32_t> ancestor_vec(color_sets.size(), -1);
     std::vector<std::int32_t> depth_vec(color_sets.size(), 1);
 
-    std::int64_t subset_count = 0;
-    std::int64_t subset_elements = 0;
 
     std::cout << "Computing ancestors\n";
 
@@ -80,19 +79,20 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
                     const std::int64_t dense_bits = s2.size();
 
                     if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
-                        ++subset_count;
-                        subset_elements += dense_bits;
                         ancestor_vec[i] = j;
                         if (depth_vec[j] <= depth_vec[i]) {
                             depth_vec[j] = depth_vec[i] + 1;
                         }
                     }
+
                 }
                 break;
             }
         }
     }
 
+    std::int64_t subset_count = 0;
+    std::int64_t subset_elements = 0;
 
     std::int64_t dense_count = 0;
     std::int64_t dense_elements = 0;
@@ -100,10 +100,14 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     std::int64_t sparse_count = 0;
     std::int64_t sparse_elements = 0;
 
+    std::int64_t root_count = 0;
+
     std::cout << "Computing space for roots\n";
 
     for (std::int64_t i = 0; i < ancestor_vec.size(); ++i) {
         if (ancestor_vec[i] == -1) {
+            ++root_count;
+
             const std::int64_t dense_bits = color_sets[i].back() + 1;
             const std::int64_t sparse_bits = color_sets[i].size() * enc_width;
 
@@ -114,6 +118,12 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
                 ++sparse_count;
                 sparse_elements += color_sets[i].size();
             }
+        } else {
+            const auto ancestor_idx = ancestor_vec[i];
+            const std::int64_t dense_bits = color_sets[ancestor_idx].size();
+
+            ++subset_count;
+            subset_elements += dense_bits;
         }
     }
 
@@ -135,75 +145,89 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     temp_subset_starts.reserve(subset_count + 1);
     temp_subset_starts.push_back(0);
 
-    std::vector<std::int64_t> set_mapping(color_sets.size(), 0);
+    std::vector<std::int64_t> set_mapping(color_sets.size(), -1);
 
     std::cout << "Computing temporary representations\n";
 
-    for (std::int64_t i = 0; i < color_sets.size(); ++i) {
-        const auto ancestor_idx = ancestor_vec[i];
+    {
+        std::int64_t dense_idx = 0;
+        std::int64_t sparse_idx = dense_count;
+        std::int64_t subset_idx = dense_count + sparse_count;
 
-        if (ancestor_idx == -1) {
-            const std::int64_t sparse_bits = color_sets[i].size() * enc_width;
-            const std::int64_t dense_bits = color_sets[i].back() + 1;
+        for (std::int64_t i = 0; i < color_sets.size(); ++i) {
+            if (ancestor_vec[i] == -1) {
+                const std::int64_t sparse_bits = color_sets[i].size() * enc_width;
+                const std::int64_t dense_bits = color_sets[i].back() + 1;
 
-            if (dense_bits < sparse_bits) {
-                std::vector<bool> temp_bv(color_sets[i].back() + 1, 0);
+                if (dense_bits < sparse_bits) {
+                    std::vector<bool> temp_bv(color_sets[i].back() + 1, 0);
 
-                for (const auto x : color_sets[i]) {
-                    temp_bv[x] = 1;
+                    for (const auto x : color_sets[i]) {
+                        temp_bv[x] = 1;
+                    }
+
+                    for (const auto x : temp_bv) {
+                        temp_dense.push_back(x);
+                    }
+
+                    temp_dense_starts.push_back(temp_dense.size());
+
+                    set_mapping[i] = dense_idx;
+                    ++dense_idx;
+                } else {
+                    for (const auto x : color_sets[i]) {
+                        temp_sparse.push_back(x);
+                    }
+
+                    temp_sparse_starts.push_back(temp_sparse.size());
+
+                    set_mapping[i] = sparse_idx;
+                    ++sparse_idx;
+                }
+            } else {
+                const auto ancestor_idx = ancestor_vec[i];
+                const std::int64_t ancestor_size = color_sets[ancestor_idx].size();
+                std::vector<bool> temp_bv(ancestor_size, 0);
+
+                for (std::int64_t m = 0, k = 0; m < ancestor_size; ++m) {
+                    if (color_sets[ancestor_idx][m] == color_sets[i][k]) {
+                        temp_bv[m] = 1;
+                        ++k;
+                    }
                 }
 
                 for (const auto x : temp_bv) {
-                    temp_dense.push_back(x);
+                    temp_subsets.push_back(x);
                 }
 
-                temp_dense_starts.push_back(temp_dense.size());
+                temp_subset_starts.push_back(temp_subsets.size());
 
-                set_mapping[i] = temp_dense_starts.size() - 2;
-            } else {
-                for (const auto x : color_sets[i]) {
-                    temp_sparse.push_back(x);
-                }
-
-                temp_sparse_starts.push_back(temp_sparse.size());
-
-                set_mapping[i] = dense_count + temp_sparse_starts.size() - 2;
+                set_mapping[i] = subset_idx;
+                ++subset_idx;
             }
-        } else {
-            const std::int64_t ancestor_size = color_sets[ancestor_idx].size();
-            std::vector<bool> temp_bv(ancestor_size, 0);
-
-            for (std::int64_t m = 0, k = 0; m < ancestor_size; ++m) {
-                if (color_sets[ancestor_idx][m] == color_sets[i][k]) {
-                    temp_bv[m] = 1;
-                    ++k;
-                }
-            }
-
-            for (const auto x : temp_bv) {
-                temp_subsets.push_back(x);
-            }
-
-            temp_subset_starts.push_back(temp_subsets.size());
-
-            set_mapping[i] = dense_count + sparse_count + temp_subset_starts.size() - 2;
         }
     }
 
     std::vector<std::int64_t> temp_ptrs(subset_count);
 
     std::cout << "Computing ancestor pointers\n";
+    {
+        std::int64_t subset_idx = 0;
 
-    for (std::int64_t i = 0; i < ancestor_vec.size(); ++i) {
-        const auto ancestor = ancestor_vec[i];
+        for (std::int64_t i = 0; i < ancestor_vec.size(); ++i) {
+            const auto ancestor = ancestor_vec[i];
 
-        if (ancestor != -1) {
-            const auto subset_id = set_mapping[i] - (dense_count + sparse_count);
-            const auto ancestor_id = set_mapping[ancestor];
-            temp_ptrs[subset_id] = ancestor_id;
+            if (ancestor != -1) {
+                assert((color_sets[i].size() < color_sets[ancestor].size()) && "Subset was not smaller than it's ancestor");
+                const std::int64_t subset_id = subset_idx;
+                ++subset_idx;
+                const std::int64_t ancestor_id = set_mapping[ancestor];
+                temp_ptrs[subset_id] = ancestor_id;
+            }
         }
     }
 
+    std::cout << "Root sets: " << root_count << "\n";
     std::cout << "Dense root sets: " << dense_count << "\n";
     std::cout << "Sparse root sets: " << sparse_count << "\n";
     std::cout << "Subsets: " << subset_count << "\n";
@@ -289,10 +313,28 @@ void test_run() {
     color_sets.push_back({3});
     color_sets.push_back({4});
 
+    color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
     color_sets.push_back({10, 11});
     color_sets.push_back({10});
     color_sets.push_back({11});
     color_sets.push_back({12});
+    color_sets.push_back({13});
+    color_sets.push_back({14});
+    color_sets.push_back({15});
+    color_sets.push_back({0, 2, 4, 6, 8, 10, 12, 14});
+    color_sets.push_back({0, 4, 8, 12});
+    color_sets.push_back({0, 8});
+    color_sets.push_back({4, 12});
+    color_sets.push_back({2, 6, 10, 15});
+    color_sets.push_back({2, 10});
+    color_sets.push_back({6, 15});
+    color_sets.push_back({1, 3, 5, 7, 9, 11, 13, 15});
+    color_sets.push_back({1, 5, 9, 13});
+    color_sets.push_back({1, 9});
+    color_sets.push_back({5, 13});
+    color_sets.push_back({3, 7, 11, 15});
+    color_sets.push_back({3, 11});
+    color_sets.push_back({7, 15});
 
     std::sort(color_sets.begin(), color_sets.end(),
               [](const std::vector<std::uint32_t>& v, const std::vector<std::uint32_t>& w) {
@@ -331,6 +373,8 @@ void test_run() {
 }
 
 int main(int argc, char* argv[]) {
+    // test_run();
+
     if (argc != 5) {
         std::fprintf(stderr, "usage: %s [input file] [depth limit] [int encoding width] [output file]\n", argv[0]);
         std::exit(EXIT_FAILURE);

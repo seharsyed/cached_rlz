@@ -76,7 +76,7 @@ struct ds {
     };
 
     bool is_root(const std::int64_t idx) const {
-        return idx < (dense_starts.size() - 1 + sparse_starts.size() - 1);
+        return idx < root_count();
     }
 
     bool is_subset(const std::int64_t idx) const {
@@ -84,7 +84,7 @@ struct ds {
     }
 
     bool is_dense(const std::int64_t idx) const {
-        return (idx < dense_starts.size() - 1);
+        return idx < dense_count();
     }
 
     bool is_sparse(const std::int64_t idx) const {
