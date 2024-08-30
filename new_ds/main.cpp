@@ -373,16 +373,22 @@ void test_run() {
 }
 
 int main(int argc, char* argv[]) {
-    // test_run();
-
-    if (argc != 5) {
-        std::fprintf(stderr, "usage: %s [input file] [depth limit] [int encoding width] [output file]\n", argv[0]);
+    if (argc != 4) {
+        std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
         std::exit(EXIT_FAILURE);
     }
 
     const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
     const std::int32_t depth_limit = std::stoi(argv[2]);
-    const std::int64_t enc_width = std::stoull(argv[3]);
+
+    std::int64_t enc_width = 0;
+
+    for (const auto& cs : color_sets) {
+        for (const auto x : cs) {
+            const std::int64_t bits = bits_required(x);
+            enc_width = std::max(enc_width, bits);
+        }
+    }
 
     std::cout << "depth limit: " << depth_limit << "\n";
     std::cout << "encoding width: " << enc_width << "\n";
@@ -399,7 +405,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n";
     std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
 
-    std::ofstream ofs(argv[4]);
+    std::ofstream ofs(argv[3]);
     const auto bw = d.serialize(ofs);
     std::cout << "bytes written: " << bw << "\n";
     ofs.close();
