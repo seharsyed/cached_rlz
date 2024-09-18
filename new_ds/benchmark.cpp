@@ -57,4 +57,5 @@ int main(int argc, char* argv[]) {
 
     const auto duration = extract_benchmark(d, d.size(), accesses);
     std::cout << accesses << " accesses took: " <<  duration << " seconds\n";
+    std::cout << "average time per access: " <<  duration / static_cast<double>(accesses) << " seconds\n";
 }

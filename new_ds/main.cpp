@@ -23,21 +23,21 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
     const auto begin = ifs.tellg();
     ifs.seekg(0, std::ios::end);
     const auto end = ifs.tellg();
-    const std::int64_t file_length = end - begin;
+    const std::size_t file_length = end - begin;
     ifs.seekg(0);
-    const std::int64_t text_length = file_length / sizeof(T);
+    const std::size_t text_length = file_length / sizeof(T);
 
-    std::int64_t i = 0;
+    std::size_t i = 0;
     while (i < text_length) {
-        std::int64_t cs_sz = 0;
+        std::size_t cs_sz = 0;
         ifs.read(reinterpret_cast<char*>(&cs_sz), sizeof(T));
         ++i;
         std::vector<T> cs(cs_sz, 0);
-        for (std::int64_t j = 0; j < cs_sz; ++j) {
+        for (std::size_t j = 0; j < cs_sz; ++j) {
             ifs.read(reinterpret_cast<char*>(&cs[j]), sizeof(T));
             ++i;
         }
-        color_sets.push_back(cs);
+        color_sets.push_back(std::move(cs));
     }
     ifs.close();
 
@@ -49,43 +49,49 @@ static inline std::size_t bits_required(const std::size_t x) {
 }
 
 std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std::uint32_t>>& color_sets,
-                                              const std::int32_t depth_limit,
-                                              const std::int64_t enc_width) {
+                                              const std::size_t depth_limit,
+                                              const std::size_t enc_width) {
     // if ancestor[i] = -1, then set i is root set
     std::vector<std::int64_t> ancestor_vec(color_sets.size(), -1);
     std::vector<std::size_t> depth_vec(color_sets.size(), 1);
 
     std::cout << "Computing ancestors\n";
 
-    const std::int64_t ptr_width = bits_required(color_sets.size());
+    const std::size_t ptr_width = bits_required(color_sets.size());
 
-    #pragma omp parallel for schedule(dynamic, 1)
-    for (std::int64_t i = 0; i < color_sets.size(); ++i) {
-        const auto& s1 = color_sets[i];
+    if (depth_limit > 1) {
+        #pragma omp parallel for schedule(dynamic, 1)
+        for (std::int64_t i = 0; i < color_sets.size(); ++i) {
+            const auto& s1 = color_sets[i];
 
-        for (std::int64_t j = i + 1; j < color_sets.size(); ++j) {
-            const auto& s2 = color_sets[j];
+            for (std::int64_t j = i + 1; j < color_sets.size(); ++j) {
+                const auto& s2 = color_sets[j];
 
-            // if |s1| >= |s2|, then s1 cannot be a subset of s2
-            if (s1.size() >= s2.size()) {
-                continue;
-            }
+                // if |s1| >= |s2|, then s1 cannot be a subset of s2
+                if (s1.size() >= s2.size()) {
+                    continue;
+                }
 
-            if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
-                #pragma omp critical
-                {
-                    const std::size_t sparse_bits = s1.size() * enc_width;
-                    const std::size_t dense_bits = s2.size();
+                if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
+                    #pragma omp critical
+                    {
+                        const std::size_t sparse_bits = s1.size() * enc_width;
+                        const std::size_t dense_bits = s2.size();
 
-                    if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
-                        ancestor_vec[i] = j;
-                        if (depth_vec[j] <= depth_vec[i]) {
-                            depth_vec[j] = depth_vec[i] + 1;
+                        if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
+                            ancestor_vec[i] = j;
+                            if (depth_vec[j] <= depth_vec[i]) {
+                                const auto d = depth_vec[i] + 1;
+                                depth_vec[j] = d;
+                            }
                         }
+
                     }
 
+                    if (ancestor_vec[i] != -1) {
+                        break;
+                    }
                 }
-                break;
             }
         }
     }
@@ -143,7 +149,7 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     sdsl::int_vector<> subset_starts(subset_count + 1, 0, bits_required(subset_elements));
     sdsl::int_vector<> ancestor_ptrs(subset_count, 0, bits_required(color_sets.size()));
 
-    std::cout << "Computing temporary representations\n";
+    std::cout << "Computing representation\n";
 
     {
         std::int64_t dense_idx = 0;

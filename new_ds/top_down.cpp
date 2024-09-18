@@ -99,14 +99,6 @@ std::vector<std::int64_t> find_parents(const std::vector<std::vector<std::uint32
                 }
             }
         }
-
-        {
-            std::int64_t idx = 0;
-            for (const auto d : depth_vec) {
-                std::cout << idx << " | depth: " << d << "\n";
-                ++idx;
-            }
-        }
     }
 
     return ancestor_vec;
