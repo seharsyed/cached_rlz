@@ -149,7 +149,7 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
 
             if ((ss_bits < dense_bits) && (ss_bits < sparse_bits)) {
                 ++subset_count;
-                subset_elements += dense_bits;
+                subset_elements += ancestor_bits;
             } else {
                 ancestor_vec[i] = -1;
                 ++root_count;
