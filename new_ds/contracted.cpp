@@ -16,6 +16,26 @@
 #include "ds.hpp"
 
 template<typename T>
+void print_vec(const std::vector<T>& v) {
+    for (const auto x : v) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
+}
+
+template<typename T>
+std::string stringify_vec(const std::vector<T>& v) {
+    std::stringstream ss;
+    ss << "{";
+    for (std::size_t i = 0; i < v.size() - 1; ++i) {
+        ss << v[i] << ", ";
+    }
+    ss << v.back() << "}";
+
+    return ss.str();
+}
+
+template<typename T>
 std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
     std::vector<std::vector<T>> color_sets;
 
@@ -73,12 +93,12 @@ std::vector<std::int64_t> find_parents(const std::vector<std::vector<std::uint32
             }
         }
 
-        std::cout << "Computing depths\n";
+        std::cout << "Computing contractions\n";
 
-        std::vector<std::int64_t> depth_vec(color_sets.size(), -1);
+        std::vector<std::int64_t> cpar_vec(color_sets.size(), -1);
 
         for (std::int64_t i = 0; i < color_sets.size(); ++i) {
-            if (depth_vec[i] == -1) {
+            if (cpar_vec[i] == -1) {
                 std::vector<std::int64_t> st;
                 st.push_back(i);
 
@@ -89,17 +109,27 @@ std::vector<std::int64_t> find_parents(const std::vector<std::vector<std::uint32
                 }
 
                 const std::int64_t root = st.back();
-                std::int64_t depth = 0;
+                cpar_vec[root] = -1;
 
-                while (st.size()) {
-                    if (depth > depth_limit) {
-                        ancestor_vec[st.back()] = root;
-                        depth = 1;
+                for (std::int64_t i = 0; i < st.size() - 1; ++i) {
+                    const auto s = st[i];
+                    cpar_vec[s] = ancestor_vec[s];
+
+                    for (std::int64_t j = i + 1; j < st.size(); ++j) {
+                        const auto cpar = st[j];
+                        if (color_sets[cpar].size() <= 2 * color_sets[s].size()) {
+                            cpar_vec[s] = cpar;
+                        }
                     }
-                    const auto top = st.back(); st.pop_back();
-                    depth_vec[top] = depth++;
                 }
             }
+        }
+
+        for (std::int64_t i = 0; i < cpar_vec.size(); ++i) {
+            const auto isz = color_sets[i].size();
+            const auto parent = ancestor_vec[i];
+            const auto cpar = cpar_vec[i];
+            std::cout << i << ": " << stringify_vec(color_sets[i]) << ": " << parent << " " << cpar << "\n";
         }
     }
 
@@ -274,66 +304,51 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     return {ds(dense_roots, dense_starts, sparse_roots, sparse_starts, subsets, subset_starts, ancestor_ptrs), set_mapping};
 }
 
-template<typename T>
-void print_vec(const std::vector<T>& v) {
-    for (const auto x : v) {
-        std::cout << x << " ";
-    }
-    std::cout << "\n";
-}
-
-template<typename T>
-std::string stringify_vec(const std::vector<T>& v) {
-    std::stringstream ss;
-    ss << "{";
-    for (std::size_t i = 0; i < v.size() - 1; ++i) {
-        ss << v[i] << ", ";
-    }
-    ss << v.back() << "}";
-
-    return ss.str();
-}
-
 void test_run() {
     std::vector<std::vector<std::uint32_t>> color_sets;
 
-    color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
-    color_sets.push_back({0, 1, 2, 3, 4, 5});
-    color_sets.push_back({0, 1, 2});
-    color_sets.push_back({0, 1});
-    color_sets.push_back({0, 2, 4, 6, 8, 10, 12, 14});
-    color_sets.push_back({0, 4, 8, 12});
-    color_sets.push_back({0, 8});
-    color_sets.push_back({0});
-    color_sets.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    color_sets.push_back({1, 2});
-    color_sets.push_back({1, 3, 5, 7, 9, 11, 13, 15});
-    color_sets.push_back({1, 5, 9, 13});
-    color_sets.push_back({1, 9});
-    color_sets.push_back({10, 11});
-    color_sets.push_back({10});
-    color_sets.push_back({11});
-    color_sets.push_back({12});
-    color_sets.push_back({13});
-    color_sets.push_back({14});
-    color_sets.push_back({15});
-    color_sets.push_back({1});
-    color_sets.push_back({2, 10});
-    color_sets.push_back({2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15});
-    color_sets.push_back({2, 6, 10, 15});
-    color_sets.push_back({2, 8, 9, 10, 11, 12, 13, 15});
-    color_sets.push_back({3, 11});
-    color_sets.push_back({3, 4, 5});
-    color_sets.push_back({3, 4});
-    color_sets.push_back({3, 7, 11, 15});
-    color_sets.push_back({3});
-    color_sets.push_back({4, 12});
-    color_sets.push_back({4, 5});
-    color_sets.push_back({4});
-    color_sets.push_back({5, 13});
-    color_sets.push_back({6, 15});
-    color_sets.push_back({7, 15});
+    // color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    // color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
+    // color_sets.push_back({0, 1, 2, 3, 4, 5});
+    // color_sets.push_back({0, 1, 2});
+    // color_sets.push_back({0, 1});
+    // color_sets.push_back({0, 2, 4, 6, 8, 10, 12, 14});
+    // color_sets.push_back({0, 4, 8, 12});
+    // color_sets.push_back({0, 8});
+    // color_sets.push_back({0});
+    // color_sets.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    // color_sets.push_back({1, 2});
+    // color_sets.push_back({1, 3, 5, 7, 9, 11, 13, 15});
+    // color_sets.push_back({1, 5, 9, 13});
+    // color_sets.push_back({1, 9});
+    // color_sets.push_back({10, 11});
+    // color_sets.push_back({10});
+    // color_sets.push_back({11});
+    // color_sets.push_back({12});
+    // color_sets.push_back({13});
+    // color_sets.push_back({14});
+    // color_sets.push_back({15});
+    // color_sets.push_back({1});
+    // color_sets.push_back({2, 10});
+    // color_sets.push_back({2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15});
+    // color_sets.push_back({2, 6, 10, 15});
+    // color_sets.push_back({2, 8, 9, 10, 11, 12, 13, 15});
+    // color_sets.push_back({3, 11});
+    // color_sets.push_back({3, 4, 5});
+    // color_sets.push_back({3, 4});
+    // color_sets.push_back({3, 7, 11, 15});
+    // color_sets.push_back({3});
+    // color_sets.push_back({4, 12});
+    // color_sets.push_back({4, 5});
+    // color_sets.push_back({4});
+    // color_sets.push_back({5, 13});
+    // color_sets.push_back({6, 15});
+    // color_sets.push_back({7, 15});
+
+    color_sets.push_back({1,2,3,4,5,6,7,9});
+    color_sets.push_back({1,2,3,4});
+    color_sets.push_back({1,2,3});
+    color_sets.push_back({1,2});
 
     std::sort(color_sets.begin(), color_sets.end(),
               [](const std::vector<std::uint32_t>& v, const std::vector<std::uint32_t>& w) {
@@ -371,40 +386,41 @@ void test_run() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
-        std::exit(EXIT_FAILURE);
-    }
+    // if (argc != 4) {
+    //     std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
+    //     std::exit(EXIT_FAILURE);
+    // }
 
-    const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
-    const std::int32_t depth_limit = std::stoi(argv[2]);
+    // const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
+    // const std::int32_t depth_limit = std::stoi(argv[2]);
 
-    std::int64_t enc_width = 0;
+    // std::int64_t enc_width = 0;
 
-    for (const auto& cs : color_sets) {
-        for (const auto x : cs) {
-            const std::int64_t bits = bits_required(x);
-            enc_width = std::max(enc_width, bits);
-        }
-    }
+    // for (const auto& cs : color_sets) {
+    //     for (const auto x : cs) {
+    //         const std::int64_t bits = bits_required(x);
+    //         enc_width = std::max(enc_width, bits);
+    //     }
+    // }
 
-    std::cout << "depth limit: " << depth_limit << "\n";
-    std::cout << "encoding width: " << enc_width << "\n";
+    // std::cout << "depth limit: " << depth_limit << "\n";
+    // std::cout << "encoding width: " << enc_width << "\n";
 
-    const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
+    // const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
 
-    std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
-    std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
-    std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
-    std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
-    std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
-    std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
-    std::cout << "\n";
-    std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+    // std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
+    // std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
+    // std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
+    // std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
+    // std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
+    // std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
+    // std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
+    // std::cout << "\n";
+    // std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
 
-    std::ofstream ofs(argv[3]);
-    const auto bw = d.serialize(ofs);
-    std::cout << "bytes written: " << bw << "\n";
-    ofs.close();
+    // std::ofstream ofs(argv[3]);
+    // const auto bw = d.serialize(ofs);
+    // std::cout << "bytes written: " << bw << "\n";
+    // ofs.close();
+    test_run();
 }
