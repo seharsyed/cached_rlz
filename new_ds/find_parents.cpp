@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 
     std::ofstream ofs(argv[2]);
     for (const auto parent : parent_vec) {
-        ofs.write(reinterpret_cast<char*>(&parent), sizeof(parent));
+        ofs.write(reinterpret_cast<const char*>(&parent), sizeof(parent));
     }
     ofs.close();
 }
