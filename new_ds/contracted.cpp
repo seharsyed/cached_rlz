@@ -64,85 +64,100 @@ std::vector<std::vector<T>> get_color_sets(const char* input_filename) {
     return color_sets;
 }
 
+template<typename T>
+std::vector<T> get_parents(const char* input_filename) {
+    std::vector<T> parents;
+
+    std::ifstream ifs(input_filename, std::ios::binary);
+    const auto begin = ifs.tellg();
+    ifs.seekg(0, std::ios::end);
+    const auto end = ifs.tellg();
+    const std::size_t file_length = end - begin;
+    ifs.seekg(0);
+    const std::size_t text_length = file_length / sizeof(T);
+
+    std::size_t i = 0;
+    while (i < text_length) {
+        T parent = 0;
+        ifs.read(reinterpret_cast<char*>(&parent), sizeof(T));
+        parents.push_back(parent);
+        ++i;
+    }
+    ifs.close();
+
+    return parents;
+}
+
 static inline std::size_t bits_required(const std::size_t x) {
     return std::max(static_cast<std::size_t>(std::bit_width(x)), static_cast<std::size_t>(1));
 }
 
-std::vector<std::int64_t> find_parents(const std::vector<std::vector<std::uint32_t>>& color_sets,
-                                       const std::int64_t depth_limit) {
+std::vector<std::int64_t> find_parents(const std::vector<std::vector<std::uint32_t>>& color_sets) {
     // if ancestor[i] = -1, then set i is root set
     std::vector<std::int64_t> ancestor_vec(color_sets.size(), -1);
 
-    if (depth_limit > 1) {
-        #pragma omp parallel for schedule(dynamic, 1)
-        for (std::int64_t i = 0; i < color_sets.size(); ++i) {
-            const auto& s1 = color_sets[i];
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (std::int64_t i = 0; i < color_sets.size(); ++i) {
+        const auto& s1 = color_sets[i];
 
-            for (std::int64_t j = i + 1; j < color_sets.size(); ++j) {
-                const auto& s2 = color_sets[j];
+        for (std::int64_t j = i + 1; j < color_sets.size(); ++j) {
+            const auto& s2 = color_sets[j];
 
-                // if |s1| >= |s2|, then s1 cannot be a subset of s2
-                if (s1.size() >= s2.size()) {
-                    continue;
-                }
-
-                if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
-                    ancestor_vec[i] = j;
-                    break;
-                }
+            // if |s1| >= |s2|, then s1 cannot be a subset of s2
+            if (s1.size() >= s2.size()) {
+                continue;
             }
-        }
 
-        std::cout << "Computing contractions\n";
-
-        std::vector<std::int64_t> cpar_vec(color_sets.size(), -1);
-
-        for (std::int64_t i = 0; i < color_sets.size(); ++i) {
-            if (cpar_vec[i] == -1) {
-                std::vector<std::int64_t> st;
-                st.push_back(i);
-
-                std::int64_t parent = ancestor_vec[i];
-                while (parent != -1) {
-                    st.push_back(parent);
-                    parent = ancestor_vec[parent];
-                }
-
-                const std::int64_t root = st.back();
-                cpar_vec[root] = -1;
-
-                for (std::int64_t i = 0; i < st.size() - 1; ++i) {
-                    const auto s = st[i];
-                    cpar_vec[s] = ancestor_vec[s];
-
-                    for (std::int64_t j = i + 1; j < st.size(); ++j) {
-                        const auto cpar = st[j];
-                        if (color_sets[cpar].size() <= 2 * color_sets[s].size()) {
-                            cpar_vec[s] = cpar;
-                        }
-                    }
-                }
+            if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
+                ancestor_vec[i] = j;
+                break;
             }
-        }
-
-        for (std::int64_t i = 0; i < cpar_vec.size(); ++i) {
-            const auto isz = color_sets[i].size();
-            const auto parent = ancestor_vec[i];
-            const auto cpar = cpar_vec[i];
-            std::cout << i << ": " << stringify_vec(color_sets[i]) << ": " << parent << " " << cpar << "\n";
         }
     }
 
     return ancestor_vec;
 }
 
+std::vector<std::int64_t> contract_parents(const std::vector<std::vector<std::uint32_t>>& color_sets,
+                                           const std::vector<std::int64_t>& parent_vec) {
+    std::cout << "Computing contractions\n";
+
+    std::vector<std::int64_t> cpar_vec(color_sets.size(), -1);
+
+    for (std::int64_t i = 0; i < color_sets.size(); ++i) {
+        if (cpar_vec[i] == -1 && parent_vec[i] != -1) {
+            std::vector<std::int64_t> st;
+            st.push_back(i);
+
+            std::int64_t parent = parent_vec[i];
+            while (parent != -1) {
+                st.push_back(parent);
+                parent = parent_vec[parent];
+            }
+
+            const std::int64_t root = st.back();
+            cpar_vec[root] = -1;
+
+            for (std::int64_t i = 0; i < st.size() - 1; ++i) {
+                const auto s = st[i];
+                cpar_vec[s] = parent_vec[s];
+
+                for (std::int64_t j = i + 1; j < st.size(); ++j) {
+                    const auto cpar = st[j];
+                    if (color_sets[cpar].size() <= 2 * color_sets[s].size()) {
+                        cpar_vec[s] = cpar;
+                    }
+                }
+            }
+        }
+    }
+
+    return cpar_vec;
+}
+
 std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std::uint32_t>>& color_sets,
-                                              const std::int64_t depth_limit,
+                                              std::vector<std::int64_t>& ancestor_vec,
                                               const std::int64_t enc_width) {
-    std::cout << "Computing ancestors\n";
-
-    std::vector<std::int64_t> ancestor_vec = find_parents(color_sets, depth_limit);
-
     std::size_t subset_count = 0;
     std::size_t subset_elements = 0;
 
@@ -304,61 +319,33 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
     return {ds(dense_roots, dense_starts, sparse_roots, sparse_starts, subsets, subset_starts, ancestor_ptrs), set_mapping};
 }
 
-void test_run() {
-    std::vector<std::vector<std::uint32_t>> color_sets;
+int main(int argc, char* argv[]) {
+    if (argc != 4) {
+        std::fprintf(stderr, "usage: %s [color sets file] [parents file] [output file]\n", argv[0]);
+        std::exit(EXIT_FAILURE);
+    }
 
-    // color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    // color_sets.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
-    // color_sets.push_back({0, 1, 2, 3, 4, 5});
-    // color_sets.push_back({0, 1, 2});
-    // color_sets.push_back({0, 1});
-    // color_sets.push_back({0, 2, 4, 6, 8, 10, 12, 14});
-    // color_sets.push_back({0, 4, 8, 12});
-    // color_sets.push_back({0, 8});
-    // color_sets.push_back({0});
-    // color_sets.push_back({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-    // color_sets.push_back({1, 2});
-    // color_sets.push_back({1, 3, 5, 7, 9, 11, 13, 15});
-    // color_sets.push_back({1, 5, 9, 13});
-    // color_sets.push_back({1, 9});
-    // color_sets.push_back({10, 11});
-    // color_sets.push_back({10});
-    // color_sets.push_back({11});
-    // color_sets.push_back({12});
-    // color_sets.push_back({13});
-    // color_sets.push_back({14});
-    // color_sets.push_back({15});
-    // color_sets.push_back({1});
-    // color_sets.push_back({2, 10});
-    // color_sets.push_back({2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15});
-    // color_sets.push_back({2, 6, 10, 15});
-    // color_sets.push_back({2, 8, 9, 10, 11, 12, 13, 15});
-    // color_sets.push_back({3, 11});
-    // color_sets.push_back({3, 4, 5});
-    // color_sets.push_back({3, 4});
-    // color_sets.push_back({3, 7, 11, 15});
-    // color_sets.push_back({3});
-    // color_sets.push_back({4, 12});
-    // color_sets.push_back({4, 5});
-    // color_sets.push_back({4});
-    // color_sets.push_back({5, 13});
-    // color_sets.push_back({6, 15});
-    // color_sets.push_back({7, 15});
+    std::cout << "Reading color sets\n";
+    const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
+    std::cout << "Reading parents\n";
+    const auto parents = get_parents<std::int64_t>(argv[2]);
+    std::cout << "Computing contracted parents\n";
+    auto contracted_parents = contract_parents(color_sets, parents);
 
-    color_sets.push_back({1,2,3,4,5,6,7,9});
-    color_sets.push_back({1,2,3,4});
-    color_sets.push_back({1,2,3});
-    color_sets.push_back({1,2});
+    std::cout << "Computing encoding width\n";
 
-    std::sort(color_sets.begin(), color_sets.end(),
-              [](const std::vector<std::uint32_t>& v, const std::vector<std::uint32_t>& w) {
-                  return v.size() < w.size();
-              });
+    std::int64_t enc_width = 0;
 
-    const std::int32_t depth_limit = 3;
-    const std::int64_t enc_width = 4;
+    for (const auto& cs : color_sets) {
+        for (const auto x : cs) {
+            const std::int64_t bits = bits_required(x);
+            enc_width = std::max(enc_width, bits);
+        }
+    }
 
-    const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
+    std::cout << "encoding width: " << enc_width << "\n";
+
+    const auto [d, m] = build_ds(color_sets, contracted_parents, enc_width);
 
     std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
     std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
@@ -368,59 +355,10 @@ void test_run() {
     std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
     std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
     std::cout << "\n";
-
-    for (std::int64_t i = 0; i < m.size(); ++i) {
-        std::cout << i << " -> " << m[i] << "\n";
-        const auto idx = m[i];
-        const auto s = d.extract(idx);
-        if (color_sets[i] != s) {
-            std::cout << stringify_vec(color_sets[i]) << " != " << stringify_vec(s) << "\n";
-        }
-    }
-
     std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
 
-    for (auto i = 0; i < d.ancestor_ptrs.size(); ++i) {
-        std::cout << d.ancestor_ptrs[i] << "\n";
-    }
-}
-
-int main(int argc, char* argv[]) {
-    // if (argc != 4) {
-    //     std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
-    //     std::exit(EXIT_FAILURE);
-    // }
-
-    // const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
-    // const std::int32_t depth_limit = std::stoi(argv[2]);
-
-    // std::int64_t enc_width = 0;
-
-    // for (const auto& cs : color_sets) {
-    //     for (const auto x : cs) {
-    //         const std::int64_t bits = bits_required(x);
-    //         enc_width = std::max(enc_width, bits);
-    //     }
-    // }
-
-    // std::cout << "depth limit: " << depth_limit << "\n";
-    // std::cout << "encoding width: " << enc_width << "\n";
-
-    // const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
-
-    // std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
-    // std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
-    // std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
-    // std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
-    // std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
-    // std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    // std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
-    // std::cout << "\n";
-    // std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
-
-    // std::ofstream ofs(argv[3]);
-    // const auto bw = d.serialize(ofs);
-    // std::cout << "bytes written: " << bw << "\n";
-    // ofs.close();
-    test_run();
+    std::ofstream ofs(argv[3]);
+    const auto bw = d.serialize(ofs);
+    std::cout << "bytes written: " << bw << "\n";
+    ofs.close();
 }
