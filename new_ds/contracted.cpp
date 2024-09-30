@@ -24,9 +24,12 @@ std::vector<std::int64_t> contract_parents(const std::vector<std::vector<std::ui
                 const auto s = st[i];
                 cpar_vec[s] = parent_vec[s];
 
+                const std::size_t thres = 2 * color_sets[s].size();
+
                 for (std::int64_t j = i + 1; j < st.size(); ++j) {
                     const auto cpar = st[j];
-                    if (color_sets[cpar].size() <= 2 * color_sets[s].size()) {
+
+                    if (color_sets[cpar].size() <= thres) {
                         cpar_vec[s] = cpar;
                     }
                 }

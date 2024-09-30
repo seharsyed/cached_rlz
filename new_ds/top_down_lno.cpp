@@ -1,6 +1,5 @@
 #include "ds_construction.hpp"
 
-
 void top_down_lno_limit(const std::vector<std::vector<std::uint32_t>>& color_sets,
                         std::vector<std::int64_t>& parent_vec,
                         const std::int64_t depth_limit) {

@@ -24,6 +24,7 @@ void top_down_limit(const std::vector<std::vector<std::uint32_t>>& color_sets,
                     parent_vec[st.back()] = root;
                     depth = 1;
                 }
+
                 const auto top = st.back(); st.pop_back();
                 depth_vec[top] = depth++;
             }
