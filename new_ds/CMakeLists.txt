@@ -40,6 +40,11 @@ target_compile_features(top_down_lno PRIVATE cxx_std_20)
 target_compile_options(top_down_lno PRIVATE -O3)
 target_link_libraries(top_down_lno PRIVATE sdsl)
 
+add_executable(stats stats.cpp)
+target_compile_features(stats PRIVATE cxx_std_20)
+target_compile_options(stats PRIVATE -O3)
+target_link_libraries(stats PRIVATE sdsl)
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(main PUBLIC OpenMP::OpenMP_CXX)
