@@ -1,7 +1,9 @@
 #pragma once
 
 #include <istream>
+#include <map>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include <cstdint>
@@ -271,5 +273,17 @@ struct ds {
         }
 
         return dst;
+    }
+
+    const std::map<std::string, std::int64_t> space_breakdown() const {
+       return std::map<std::string, std::int64_t>{
+            {"dense_container", sdsl::size_in_bytes(dense_container)},
+            {"dense_starts", sdsl::size_in_bytes(dense_starts)},
+            {"sparse_container", sdsl::size_in_bytes(sparse_container)},
+            {"sparse_starts", sdsl::size_in_bytes(sparse_starts)},
+            {"subset_container", sdsl::size_in_bytes(subset_container)},
+            {"subset_starts", sdsl::size_in_bytes(subset_starts)},
+            {"ancestor_ptrs", sdsl::size_in_bytes(ancestor_ptrs)}
+        };
     }
 };
