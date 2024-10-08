@@ -167,22 +167,15 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
-        std::size_t depth = 1;
-        for (std::int64_t parent = parent_vec[idx]; is_subset(parent);) {
+        static std::vector<std::int64_t> st;
+        st.push_back(idx);
+        std::int64_t parent = parent_vec[idx];
+        while (is_subset(parent)) {
             parent = subset_idx(parent);
-            ++depth;
+            st.push_back(parent);
             parent = parent_vec[parent];
         }
 
-        std::vector<std::int64_t> st(depth);
-        st[0] = idx;
-        for (std::int64_t parent = parent_vec[idx], i = 1; i < depth; ++i) {
-            parent = subset_idx(parent);
-            st[i] = parent;
-            parent = parent_vec[parent];
-        }
-
-        const auto parent = parent_vec[st.back()];
         std::size_t beg = 0;
         std::size_t end = 0;
         std::size_t sz = 0;
