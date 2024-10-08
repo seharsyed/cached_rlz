@@ -23,9 +23,7 @@ struct ds {
     sdsl::int_vector<> subset_starts;
     sdsl::int_vector<> parent_vec;
 
-    std::vector<std::int64_t> st;
-
-    ds() { st.reserve(64); }
+    ds() {}
 
     ds(const sdsl::bit_vector& dense_container,
        const sdsl::int_vector<>& dense_starts,
@@ -40,7 +38,7 @@ struct ds {
           sparse_starts(sparse_starts),
           subset_container(subset_container),
           subset_starts(subset_starts),
-          parent_vec(parent_vec) { st.reserve(64); }
+          parent_vec(parent_vec) {}
 
     std::int64_t size_in_bytes() const {
         return sdsl::size_in_bytes(dense_container)
@@ -128,7 +126,7 @@ struct ds {
         return idx - root_count();
     }
 
-    std::vector<std::uint32_t> extract(const std::int64_t idx) {
+    std::vector<std::uint32_t> extract(const std::int64_t idx) const {
         if (is_dense(idx)) {
             return extract_dense(dense_idx(idx));
         } else if (is_sparse(idx)) {
@@ -168,7 +166,8 @@ struct ds {
         return s;
     }
 
-    std::vector<std::uint32_t> extract_subset(const std::int64_t idx) {
+    std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
+        static std::vector<std::int64_t> st;
         st.push_back(idx);
         std::int64_t parent = parent_vec[idx];
         while (is_subset(parent)) {
@@ -231,6 +230,7 @@ struct ds {
         }
 
         std::vector<std::uint32_t> s(elems);
+
         for (std::int64_t i = 0, j = 0; i < bv.size(); ++i) {
             if (bv[i]) {
                 s[j++] = i;

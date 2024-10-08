@@ -23,7 +23,7 @@ std::vector<std::size_t> generate_sampling_positions(const std::size_t n, const 
     return sampling_positions;
 }
 
-double extract_benchmark(ds& d, const std::size_t input_sz, const std::size_t n) {
+double extract_benchmark(const ds& d, const std::size_t input_sz, const std::size_t n) {
     const auto sampling_positions = generate_sampling_positions(n, input_sz);
 
     auto start = std::chrono::high_resolution_clock::now();
