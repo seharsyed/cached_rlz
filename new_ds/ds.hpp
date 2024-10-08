@@ -167,9 +167,6 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
-        // TODO: minimize allocations
-
-
         std::size_t depth = 1;
         std::int64_t parent = parent_vec[idx];
         while (is_subset(parent)) {
@@ -178,6 +175,7 @@ struct ds {
             ++depth;
         }
 
+        // TODO: try changing stack to a member variable
         std::vector<std::int64_t> st(depth);
         auto st_it = st.begin();
         *st_it = idx; ++st_it;
@@ -225,7 +223,7 @@ struct ds {
             for (std::size_t w = 0, elem = ss_beg; w < words; ++w) {
                 const std::uint64_t bits = std::popcount(bv.data()[w]);
                 std::uint64_t mask = 0ull;
-                // TODO: try alternate masking approach
+                // TODO: try alternate masking approach with countr_zero
                 for (std::uint64_t b = 1; (b <= bits) && (elem < ss_end); ++b) {
                     const std::uint64_t idx = sdsl::bits::sel(bv.data()[w], b);
                     const std::uint64_t bit = subset_container[elem++];

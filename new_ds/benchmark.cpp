@@ -29,7 +29,7 @@ double extract_benchmark(const ds& d, const std::size_t input_sz, const std::siz
     auto start = std::chrono::high_resolution_clock::now();
     std::uint32_t x = 0;
     for (const auto pos : sampling_positions) {
-        const auto res = d.extract(pos);
+        const auto res{d.extract(pos)};
         x ^= res.back(); // in order to not optimize result away
     }
     auto end = std::chrono::high_resolution_clock::now();
