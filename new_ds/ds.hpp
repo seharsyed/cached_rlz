@@ -167,22 +167,12 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
-        std::size_t depth = 1;
+        static std::vector<std::int64_t> st;
+        st.push_back(idx);
         std::int64_t parent = parent_vec[idx];
         while (is_subset(parent)) {
             parent = subset_idx(parent);
-            parent = parent_vec[parent];
-            ++depth;
-        }
-
-        // TODO: try changing stack to a member variable
-        std::vector<std::int64_t> st(depth);
-        auto st_it = st.begin();
-        *st_it = idx; ++st_it;
-        parent = parent_vec[idx];
-        while (is_subset(parent)) {
-            parent = subset_idx(parent);
-            *st_it = parent; ++st_it;
+            st.push_back(parent);
             parent = parent_vec[parent];
         }
 
