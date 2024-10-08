@@ -324,7 +324,7 @@ void test_run() {
     const std::int32_t depth_limit = 5;
     const std::int64_t enc_width = 12;
 
-    const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
+    auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
 
     std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
     std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
