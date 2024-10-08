@@ -168,11 +168,23 @@ struct ds {
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
         // TODO: minimize allocations
-        std::vector<std::int64_t> st{idx};
+
+
+        std::size_t depth = 1;
         std::int64_t parent = parent_vec[idx];
         while (is_subset(parent)) {
             parent = subset_idx(parent);
-            st.push_back(parent);
+            parent = parent_vec[parent];
+            ++depth;
+        }
+
+        std::vector<std::int64_t> st(depth);
+        auto st_it = st.begin();
+        *st_it = idx; ++st_it;
+        parent = parent_vec[idx];
+        while (is_subset(parent)) {
+            parent = subset_idx(parent);
+            *st_it = parent; ++st_it;
             parent = parent_vec[parent];
         }
 
@@ -213,6 +225,7 @@ struct ds {
             for (std::size_t w = 0, elem = ss_beg; w < words; ++w) {
                 const std::uint64_t bits = std::popcount(bv.data()[w]);
                 std::uint64_t mask = 0ull;
+                // TODO: try alternate masking approach
                 for (std::uint64_t b = 1; (b <= bits) && (elem < ss_end); ++b) {
                     const std::uint64_t idx = sdsl::bits::sel(bv.data()[w], b);
                     const std::uint64_t bit = subset_container[elem++];
@@ -222,12 +235,18 @@ struct ds {
             }
         }
 
-        // TODO: minimize allocations
-        std::vector<std::uint32_t> s;
+        const auto words = (bv.size() + 63) / 64;
+        std::size_t elems = 0;
+        for (std::size_t w = 0; w < words; ++w) {
+            elems += std::popcount(bv.data()[w]);
+        }
+
+        std::vector<std::uint32_t> s(elems);
+        auto s_it = s.begin();
 
         for (std::int64_t i = 0; i < bv.size(); ++i) {
             if (bv[i]) {
-                s.push_back(i);
+                *s_it = i; ++s_it;
             }
         }
 
