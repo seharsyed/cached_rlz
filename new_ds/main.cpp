@@ -53,7 +53,7 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
                                               const std::size_t enc_width) {
     // if ancestor[i] = -1, then set i is root set
     std::vector<std::int64_t> ancestor_vec(color_sets.size(), -1);
-    std::vector<std::size_t> depth_vec(color_sets.size(), 1);
+    std::vector<std::size_t> depth_vec(color_sets.size(), 0);
 
     std::cout << "Computing ancestors\n";
 
@@ -75,18 +75,33 @@ std::tuple<ds, std::vector<int64_t>> build_ds(const std::vector<std::vector<std:
                 if (std::includes(s2.begin(), s2.end(), s1.begin(), s1.end())) {
                     #pragma omp critical
                     {
-                        const std::size_t sparse_bits = s1.size() * enc_width;
-                        const std::size_t dense_bits = s2.size();
+                        const std::size_t ancestor_bits = color_sets[j].size();
+                        const std::size_t ss_bits = ancestor_bits + ptr_width;
 
-                        if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
+                        const std::size_t dense_bits = color_sets[i].back() + 1;
+                        const std::size_t sparse_bits = color_sets[i].size() * enc_width;
+
+                        if ((ss_bits < dense_bits) && (ss_bits < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
                             ancestor_vec[i] = j;
                             if (depth_vec[j] <= depth_vec[i]) {
                                 const auto d = depth_vec[i] + 1;
                                 depth_vec[j] = d;
                             }
                         }
-
                     }
+
+                    // {
+                    //     const std::size_t sparse_bits = s1.size() * enc_width;
+                    //     const std::size_t dense_bits = s2.size();
+
+                    //     if (((dense_bits + ptr_width) < sparse_bits) && (depth_vec[i] + 1 <= depth_limit)) {
+                    //         ancestor_vec[i] = j;
+                    //         if (depth_vec[j] <= depth_vec[i]) {
+                    //             const auto d = depth_vec[i] + 1;
+                    //             depth_vec[j] = d;
+                    //         }
+                    //     }
+                    // }
 
                     if (ancestor_vec[i] != -1) {
                         break;
@@ -306,8 +321,8 @@ void test_run() {
                   return v.size() < w.size();
               });
 
-    const std::int32_t depth_limit = 3;
-    const std::int64_t enc_width = 4;
+    const std::int32_t depth_limit = 5;
+    const std::int64_t enc_width = 12;
 
     const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
 
@@ -317,7 +332,7 @@ void test_run() {
     std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
     std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
     std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
+    std::cout << "d.parent_vec.size() "    << d.parent_vec.size()    << "\n";
     std::cout << "\n";
 
     for (std::int64_t i = 0; i < m.size(); ++i) {
@@ -329,48 +344,50 @@ void test_run() {
         }
     }
 
-    std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+    // std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
 
-    for (auto i = 0; i < d.ancestor_ptrs.size(); ++i) {
-        std::cout << d.ancestor_ptrs[i] << "\n";
-    }
+    // for (auto i = 0; i < d.ancestor_ptrs.size(); ++i) {
+    //     std::cout << d.ancestor_ptrs[i] << "\n";
+    // }
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
-        std::exit(EXIT_FAILURE);
-    }
+    test_run();
 
-    const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
-    const std::int32_t depth_limit = std::stoi(argv[2]);
+    // if (argc != 4) {
+    //     std::fprintf(stderr, "usage: %s [input file] [depth limit] [output file]\n", argv[0]);
+    //     std::exit(EXIT_FAILURE);
+    // }
 
-    std::int64_t enc_width = 0;
+    // const auto color_sets = get_color_sets<std::uint32_t>(argv[1]);
+    // const std::int32_t depth_limit = std::stoi(argv[2]);
 
-    for (const auto& cs : color_sets) {
-        for (const auto x : cs) {
-            const std::int64_t bits = bits_required(x);
-            enc_width = std::max(enc_width, bits);
-        }
-    }
+    // std::int64_t enc_width = 0;
 
-    std::cout << "depth limit: " << depth_limit << "\n";
-    std::cout << "encoding width: " << enc_width << "\n";
+    // for (const auto& cs : color_sets) {
+    //     for (const auto x : cs) {
+    //         const std::int64_t bits = bits_required(x);
+    //         enc_width = std::max(enc_width, bits);
+    //     }
+    // }
 
-    const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
+    // std::cout << "depth limit: " << depth_limit << "\n";
+    // std::cout << "encoding width: " << enc_width << "\n";
 
-    std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
-    std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
-    std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
-    std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
-    std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
-    std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
-    std::cout << "\n";
-    std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+    // const auto [d, m] = build_ds(color_sets, depth_limit, enc_width);
 
-    std::ofstream ofs(argv[3]);
-    const auto bw = d.serialize(ofs);
-    std::cout << "bytes written: " << bw << "\n";
-    ofs.close();
+    // std::cout << "d.dense_container.size() "  << d.dense_container.size()  << "\n";
+    // std::cout << "d.dense_starts.size() "     << d.dense_starts.size()     << "\n";
+    // std::cout << "d.sparse_container.size() " << d.sparse_container.size() << "\n";
+    // std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
+    // std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
+    // std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
+    // std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
+    // std::cout << "\n";
+    // std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
+
+    // std::ofstream ofs(argv[3]);
+    // const auto bw = d.serialize(ofs);
+    // std::cout << "bytes written: " << bw << "\n";
+    // ofs.close();
 }

@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     std::cout << "d.sparse_starts.size() "    << d.sparse_starts.size()    << "\n";
     std::cout << "d.subset_container.size() " << d.subset_container.size() << "\n";
     std::cout << "d.subset_starts.size() "    << d.subset_starts.size()    << "\n";
-    std::cout << "d.ancestor_ptrs.size() "    << d.ancestor_ptrs.size()    << "\n";
+    std::cout << "d.parent_vec.size() "    << d.parent_vec.size()    << "\n";
     std::cout << "\n";
     std::cout << "size in bytes: " << d.size_in_bytes() << "\n";
 

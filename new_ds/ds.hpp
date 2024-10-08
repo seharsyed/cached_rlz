@@ -9,6 +9,7 @@
 #include <cstdint>
 
 #include <sdsl/bit_vectors.hpp>
+#include <sdsl/bits.hpp>
 #include <sdsl/int_vector.hpp>
 
 struct ds {
@@ -20,7 +21,7 @@ struct ds {
 
     sdsl::bit_vector subset_container;
     sdsl::int_vector<> subset_starts;
-    sdsl::int_vector<> ancestor_ptrs;
+    sdsl::int_vector<> parent_vec;
 
     ds() {}
 
@@ -30,14 +31,14 @@ struct ds {
        const sdsl::int_vector<>& sparse_starts,
        const sdsl::bit_vector& subset_container,
        const sdsl::int_vector<>& subset_starts,
-       const sdsl::int_vector<>& ancestor_ptrs)
+       const sdsl::int_vector<>& parent_vec)
         : dense_container(dense_container),
           dense_starts(dense_starts),
           sparse_container(sparse_container),
           sparse_starts(sparse_starts),
           subset_container(subset_container),
           subset_starts(subset_starts),
-          ancestor_ptrs(ancestor_ptrs) {}
+          parent_vec(parent_vec) {}
 
     std::int64_t size_in_bytes() const {
         return sdsl::size_in_bytes(dense_container)
@@ -46,7 +47,7 @@ struct ds {
             + sdsl::size_in_bytes(sparse_starts)
             + sdsl::size_in_bytes(subset_container)
             + sdsl::size_in_bytes(subset_starts)
-            + sdsl::size_in_bytes(ancestor_ptrs);
+            + sdsl::size_in_bytes(parent_vec);
     }
 
     std::int64_t serialize(std::ostream& os) const {
@@ -60,7 +61,7 @@ struct ds {
 
         bytes_written += subset_container.serialize(os);
         bytes_written += subset_starts.serialize(os);
-        bytes_written += ancestor_ptrs.serialize(os);
+        bytes_written += parent_vec.serialize(os);
 
         return bytes_written;
     }
@@ -74,7 +75,7 @@ struct ds {
 
         subset_container.load(is);
         subset_starts.load(is);
-        ancestor_ptrs.load(is);
+        parent_vec.load(is);
     };
 
     bool is_root(const std::int64_t idx) const {
@@ -166,113 +167,71 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
-        std::int64_t anc_idx = ancestor_ptrs[idx];
+        // TODO: minimize allocations
+        std::vector<std::int64_t> st{idx};
+        std::int64_t parent = parent_vec[idx];
+        while (is_subset(parent)) {
+            parent = subset_idx(parent);
+            st.push_back(parent);
+            parent = parent_vec[parent];
+        }
 
-        if (is_dense(anc_idx)) {
-            anc_idx = dense_idx(anc_idx);
-            const auto as = extract_dense(anc_idx);
+        std::size_t beg = 0;
+        std::size_t end = 0;
+        std::size_t sz = 0;
 
-            const std::int64_t beg = subset_starts[idx];
-            const std::int64_t end = subset_starts[idx + 1];
-            const std::int64_t sz = end - beg;
-
-            std::vector<std::uint32_t> s;
-
-            for (std::int64_t i = 0; i < sz; ++i) {
-                if (subset_container[beg + i]) {
-                    s.push_back(as[i]);
-                }
-            }
-
-            return s;
-        } else if (is_sparse(anc_idx)) {
-            anc_idx = sparse_idx(anc_idx);
-            // optimize to use sparse array directly
-            const auto as = extract_sparse(anc_idx);
-
-            const std::int64_t beg = subset_starts[idx];
-            const std::int64_t end = subset_starts[idx + 1];
-            const std::int64_t sz = end - beg;
-
-            std::vector<std::uint32_t> s;
-
-            for (std::int64_t i = 0; i < sz; ++i) {
-                if (subset_container[beg + i]) {
-                    s.push_back(as[i]);
-                }
-            }
-
-            return s;
+        if (is_dense(parent)) {
+            const auto root = dense_idx(parent);
+            beg = dense_starts[root];
+            end = dense_starts[root + 1];
+            sz = end - beg;
         } else {
-            const std::int64_t beg = subset_starts[idx];
-            const std::int64_t end = subset_starts[idx + 1];
-            auto bv = make_helper_bv(beg, end);
+            const auto root = sparse_idx(parent);
+            beg = sparse_starts[root];
+            end = sparse_starts[root + 1];
+            sz = sparse_container[end - 1] + 1;
+        }
 
-            while (is_subset(anc_idx)) {
-                anc_idx = subset_idx(anc_idx);
+        sdsl::bit_vector bv(sz, 0);
 
-                const std::int64_t anc_beg = subset_starts[anc_idx];
-                const std::int64_t anc_end = subset_starts[anc_idx + 1];
-                auto anc_bv = make_helper_bv(anc_beg, anc_end);
-
-                bv = extract_bits(anc_bv, bv);
-                anc_idx = ancestor_ptrs[anc_idx];
+        if (is_dense(parent)) {
+            for (std::size_t i = 0; i < (end - beg); ++i) {
+                bv[i] = dense_container[beg + i];
             }
+        } else {
+            for (std::size_t i = 0; i < (end - beg); ++i) {
+                bv[sparse_container[beg + i]] = 1;
+            }
+        }
 
-            if (is_dense(anc_idx)) {
-                anc_idx = dense_idx(anc_idx);
-                const auto as = extract_dense(anc_idx);
+        while (st.size()) {
+            const auto ss = st.back(); st.pop_back();
+            const auto ss_beg = subset_starts[ss];
+            const auto ss_end = subset_starts[ss + 1];
+            const auto words = (bv.size() + 63) / 64;
 
-                std::vector<std::uint32_t> s;
-
-                for (std::int64_t i = 0; i < as.size(); ++i) {
-                    if (bv[i]) {
-                        s.push_back(as[i]);
-                    }
+            for (std::size_t w = 0, elem = ss_beg; w < words; ++w) {
+                const std::uint64_t bits = std::popcount(bv.data()[w]);
+                std::uint64_t mask = 0ull;
+                for (std::uint64_t b = 1; (b <= bits) && (elem < ss_end); ++b) {
+                    const std::uint64_t idx = sdsl::bits::sel(bv.data()[w], b);
+                    const std::uint64_t bit = subset_container[elem++];
+                    mask |= (bit << idx);
                 }
-
-                return s;
-            } else {
-                anc_idx = sparse_idx(anc_idx);
-                const auto as = extract_sparse(anc_idx);
-
-                std::vector<std::uint32_t> s;
-
-                for (std::int64_t i = 0; i < as.size(); ++i) {
-                    if (bv[i]) {
-                        s.push_back(as[i]);
-                    }
-                }
-
-                return s;
-            }
-        }
-    }
-
-    std::vector<bool> make_helper_bv(const std::int64_t beg,
-                                     const std::int64_t end) const {
-        const std::int64_t sz = end - beg;
-        std::vector<bool> bv(sz, 0);
-
-        for (std::int64_t i = 0; i < sz; ++i) {
-            bv[i] = subset_container[beg + i];
-        }
-
-        return bv;
-    }
-
-    std::vector<bool> extract_bits(const std::vector<bool>& src,
-                                   const std::vector<bool>& mask) const {
-        const std::int64_t sz = src.size();
-        std::vector<bool> dst(sz, 0);
-
-        for (std::int64_t m = 0, k = 0; m < sz; ++m) {
-            if (src[m]) {
-                dst[m] = mask[k++];
+                bv.data()[w] = mask;
             }
         }
 
-        return dst;
+        // TODO: minimize allocations
+        std::vector<std::uint32_t> s;
+
+        for (std::int64_t i = 0; i < bv.size(); ++i) {
+            if (bv[i]) {
+                s.push_back(i);
+            }
+        }
+
+        return s;
     }
 
     const std::map<std::string, std::int64_t> space_breakdown() const {
@@ -283,7 +242,7 @@ struct ds {
             {"sparse_starts", sdsl::size_in_bytes(sparse_starts)},
             {"subset_container", sdsl::size_in_bytes(subset_container)},
             {"subset_starts", sdsl::size_in_bytes(subset_starts)},
-            {"ancestor_ptrs", sdsl::size_in_bytes(ancestor_ptrs)}
+            {"parent_vec", sdsl::size_in_bytes(parent_vec)}
         };
     }
 };
