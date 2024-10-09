@@ -3,6 +3,7 @@
 #include <istream>
 #include <map>
 #include <ostream>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -173,12 +174,12 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_subset(const std::int64_t idx) const {
-        static std::vector<std::int64_t> st;
-        st.push_back(idx);
+        static std::stack<std::int64_t> st;
+        st.push(idx);
         std::int64_t parent = parent_vec[idx];
         while (is_subset(parent)) {
             parent = subset_idx(parent);
-            st.push_back(parent);
+            st.push(parent);
             parent = parent_vec[parent];
         }
 
@@ -211,7 +212,7 @@ struct ds {
         }
 
         while (st.size()) {
-            const auto ss = st.back(); st.pop_back();
+            const auto ss = st.top(); st.pop();
             const auto ss_beg = subset_starts[ss];
             const auto ss_end = subset_starts[ss + 1];
             const auto words = (bv.size() + 63) / 64;
