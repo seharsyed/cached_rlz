@@ -137,13 +137,13 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_dense(const std::int64_t idx) const {
+        const std::size_t beg = dense_starts[idx];
+        const std::size_t end = dense_starts[idx + 1];
+        const std::size_t sz = end - beg;
+
         std::vector<std::uint32_t> s;
 
-        const std::int64_t beg = dense_starts[idx];
-        const std::int64_t end = dense_starts[idx + 1];
-        const std::int64_t sz = end - beg;
-
-        for (std::int64_t i = 0; i < sz; ++i) {
+        for (std::size_t i = 0; i < sz; ++i) {
             if (dense_container[beg + i]) {
                 s.push_back(i);
             }
@@ -153,14 +153,14 @@ struct ds {
     }
 
     std::vector<std::uint32_t> extract_sparse(const std::int64_t idx) const {
-        std::vector<std::uint32_t> s;
+        const std::size_t beg = sparse_starts[idx];
+        const std::size_t end = sparse_starts[idx + 1];
+        const std::size_t sz = end - beg;
 
-        const std::int64_t beg = sparse_starts[idx];
-        const std::int64_t end = sparse_starts[idx + 1];
-        const std::int64_t sz = end - beg;
+        std::vector<std::uint32_t> s(sz);
 
-        for (std::int64_t i = 0; i < sz; ++i) {
-            s.push_back(sparse_container[beg + i]);
+        for (std::size_t i = 0; i < sz; ++i) {
+            s[i] = sparse_container[beg + i];
         }
 
         return s;
@@ -214,6 +214,7 @@ struct ds {
                 const std::uint64_t bits = std::popcount(bv.data()[w]);
                 std::uint64_t mask = 0ull;
                 // TODO: try alternate masking approach with countr_zero
+                // TODO: try linear scanning too
                 for (std::uint64_t b = 1; (b <= bits) && (elem < ss_end); ++b) {
                     const std::uint64_t idx = sdsl::bits::sel(bv.data()[w], b);
                     const std::uint64_t bit = subset_container[elem++];
@@ -231,7 +232,7 @@ struct ds {
 
         std::vector<std::uint32_t> s(elems);
 
-        for (std::int64_t i = 0, j = 0; i < bv.size(); ++i) {
+        for (std::size_t i = 0, j = 0; i < bv.size(); ++i) {
             if (bv[i]) {
                 s[j++] = i;
             }
