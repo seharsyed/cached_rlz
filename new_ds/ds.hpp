@@ -150,7 +150,7 @@ struct ds {
             }
         }
 
-        std::vector<std::uint32_t> s(elems);;
+        std::vector<std::uint32_t> s(elems);
         for (std::size_t i = 0, j = 0; i < sz; ++i) {
             if (dense_container[beg + i]) {
                 s[j++] = i;
