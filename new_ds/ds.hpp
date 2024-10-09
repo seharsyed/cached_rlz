@@ -141,6 +141,7 @@ struct ds {
         const std::size_t end = dense_starts[idx + 1];
         const std::size_t sz = end - beg;
 
+        // TODO: optimize to use popcount
         std::size_t elems = 0;
         for (std::size_t i = 0; i < sz; ++i) {
             if (dense_container[beg + i]) {
@@ -149,7 +150,6 @@ struct ds {
         }
 
         std::vector<std::uint32_t> s(elems);;
-
         for (std::size_t i = 0, j = 0; i < sz; ++i) {
             if (dense_container[beg + i]) {
                 s[j++] = i;
@@ -165,7 +165,6 @@ struct ds {
         const std::size_t sz = end - beg;
 
         std::vector<std::uint32_t> s(sz);
-
         for (std::size_t i = 0; i < sz; ++i) {
             s[i] = sparse_container[beg + i];
         }
@@ -238,7 +237,6 @@ struct ds {
         }
 
         std::vector<std::uint32_t> s(elems);
-
         for (std::size_t i = 0, j = 0; i < bv.size(); ++i) {
             if (bv[i]) {
                 s[j++] = i;
@@ -248,7 +246,7 @@ struct ds {
         return s;
     }
 
-    const std::map<std::string, std::int64_t> space_breakdown() const {
+    std::map<std::string, std::int64_t> space_breakdown() const {
        return std::map<std::string, std::int64_t>{
             {"dense_container", sdsl::size_in_bytes(dense_container)},
             {"dense_starts", sdsl::size_in_bytes(dense_starts)},
