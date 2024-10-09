@@ -141,11 +141,18 @@ struct ds {
         const std::size_t end = dense_starts[idx + 1];
         const std::size_t sz = end - beg;
 
-        std::vector<std::uint32_t> s;
-
+        std::size_t elems = 0;
         for (std::size_t i = 0; i < sz; ++i) {
             if (dense_container[beg + i]) {
-                s.push_back(i);
+                ++elems;
+            }
+        }
+
+        std::vector<std::uint32_t> s(elems);;
+
+        for (std::size_t i = 0, j = 0; i < sz; ++i) {
+            if (dense_container[beg + i]) {
+                s[j++] = i;
             }
         }
 
