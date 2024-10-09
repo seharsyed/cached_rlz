@@ -219,15 +219,16 @@ struct ds {
 
             for (std::size_t w = 0, elem = ss_beg; w < words; ++w) {
                 const std::uint64_t bits = std::popcount(bv.data()[w]);
-                std::uint64_t mask = 0ull;
-                // TODO: try alternate masking approach with countr_zero
+                std::uint64_t mask = ~0ull;
+                std::uint64_t temp = 0ull;
                 // TODO: try linear scanning too
                 for (std::uint64_t b = 1; (b <= bits) && (elem < ss_end); ++b) {
-                    const std::uint64_t idx = sdsl::bits::sel(bv.data()[w], b);
+                    const std::uint64_t idx = std::countr_zero(bv.data()[w] & mask);
                     const std::uint64_t bit = subset_container[elem++];
-                    mask |= (bit << idx);
+                    temp |= (bit << idx);
+                    mask &= ~(1ull << idx);
                 }
-                bv.data()[w] = mask;
+                bv.data()[w] = temp;
             }
         }
 
