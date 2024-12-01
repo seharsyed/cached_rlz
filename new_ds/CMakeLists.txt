@@ -50,6 +50,11 @@ target_compile_features(sd_benchmark PRIVATE cxx_std_20)
 target_compile_options(sd_benchmark PRIVATE -O3)
 target_link_libraries(sd_benchmark PRIVATE sdsl)
 
+add_executable(parent_stats parent_stats.cpp)
+target_compile_features(parent_stats PRIVATE cxx_std_20)
+target_compile_options(parent_stats PRIVATE -O3)
+target_link_libraries(parent_stats PRIVATE sdsl)
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(main PUBLIC OpenMP::OpenMP_CXX)

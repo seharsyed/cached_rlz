@@ -222,10 +222,10 @@ struct ds {
                 std::uint64_t mask = ~0ull;
                 std::uint64_t temp = 0ull;
                 for (std::uint64_t b = 1; (b <= bits); ++b) {
-                    const std::uint64_t idx = std::countr_zero(bv.data()[w] & mask);
+                    const std::uint64_t bit_idx = std::countr_zero(bv.data()[w] & mask);
                     const std::uint64_t bit = subset_container[elem++];
-                    temp |= (bit << idx);
-                    mask &= ~(1ull << idx);
+                    temp |= (bit << bit_idx);
+                    mask &= ~(1ull << bit_idx);
                 }
                 bv.data()[w] = temp;
             }
