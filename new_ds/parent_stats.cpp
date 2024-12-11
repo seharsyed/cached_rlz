@@ -21,6 +21,6 @@ int main(int argc, char* argv[]) {
     const std::size_t subsets = sets - roots;
 
     std::cout << "number of sets: " << sets << "\n";
-    std::cout << "number of roots: " << root_sets << "\n";
+    std::cout << "number of roots: " << roots << "\n";
     std::cout << "number of subsets: " << subsets << "\n";
 }
