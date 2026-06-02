@@ -30,3 +30,30 @@ supports random access. It takes the type of data as template parameter `T`.
 ```
 ./build/parser [reference file] [suffix array file] [input file] {output file}
 ```
+
+# Cached RLZ Parser
+
+The cached RLZ parser is cached version of the RLZ parser.
+
+The implementation is in:
+
+```text
+cached_rlz_parser.hpp
+```
+
+The cached version keeps the original parser unchanged. It adds a cache for repeated suffix-array interval refinement steps used during RLZ parsing.
+
+The cache stores the result of refining a suffix-array interval by the next input symbol. If the same refinement is needed again, the cached interval is reused instead of performing the binary searches again.
+
+The comparison program is:
+
+```text
+compare_rlz_cache.cpp
+```
+
+It runs both the original RLZ parser and the cached RLZ parser on the same input. It checks that both versions produce the same factors and reports timing and cache statistics.
+
+```
+./compare_rlz_cache [reference file] [suffix array file] [input file]
+```
+
