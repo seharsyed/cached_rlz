@@ -1,0 +1,15 @@
+# Suffix array files
+*.sa
+
+# Object / compiled files
+*.o
+*.obj
+*.out
+
+# Executables / build outputs
+parser/compare_rlz_cache
+a.out
+
+# Build folders
+build/
+bin/
