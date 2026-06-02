@@ -21,9 +21,7 @@
  *
  *  (lb, rb, offset, next_symbol) -> (new_lb, new_rb)
  *
- * RLZ has no RMQ and no "match position < i" condition, so the cached value
- * deliberately does not store imin.
- */
+ **/
 
 
 template <typename T1, typename T2>
@@ -81,8 +79,7 @@ private:
 
 public:
     /**
-     * Bind this cache to exactly one (reference, suffix-array) pair.
-     * Reusing the same cache with another reference or SA is incorrect.
+     * Bind this cache to exactly one (reference, suffix-array) pair 
      */
     explicit CachedRLZParser(
         const reference_type& ref,
@@ -99,8 +96,7 @@ public:
     }
 
     /**
-     * File loading is not cached. It is I/O and the file may change between calls.
-     * This is only a pass-through. 
+     * File loading
      */
     template <typename T>
     static std::vector<T> read_file(const char* filename) {
@@ -108,8 +104,8 @@ public:
     }
 
     /**
-     * binarySearchLB is not cached alone. The useful cached unit for RLZ is the
-     * combined interval transition, because computeLZFactorAt always needs both
+     * binarySearchLB:  The useful cached unit for RLZ is the
+     * combined interval transition,computeLZFactorAt always needs both
      * LB and RB before continuing.
      */
     std::optional<std::int64_t> binarySearchLB(
