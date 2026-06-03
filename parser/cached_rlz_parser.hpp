@@ -1,28 +1,26 @@
 #pragma once
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
-
-#include "parser.hpp"   // original RLZ parser;
-
-#include <algorithm>
-#include <cstddef>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "parser.hpp"   // original RLZ parser
 
 /**
  * CachedRLZParser is an add-on wrapper for the RLZ parser.
  *
- * The file binds one reference vector and one suffix array, then mirrors lzFactorize/computeLZFactorAt while
- * caching the expensive interval-refinement step:
+ * The file binds one reference vector and one suffix array, then mirrors
+ * lzFactorize/computeLZFactorAt while caching the expensive interval-refinement step:
  *
  *  (lb, rb, offset, next_symbol) -> (new_lb, new_rb)
  *
  **/
-
 
 template <typename T1, typename T2>
 class CachedRLZParser {
@@ -47,13 +45,13 @@ public:
     };
 
 private:
-    struct Key {
+    struct LookupKey {
         std::size_t lb_remainder;
         std::size_t rb;
         std::size_t offset;
         T1 symbol;
 
-        bool operator==(const Key& other) const noexcept {
+        bool operator==(const LookupKey& other) const noexcept {
             return lb_remainder == other.lb_remainder &&
                    rb == other.rb &&
                    offset == other.offset &&
@@ -61,17 +59,22 @@ private:
         }
     };
 
-    struct Value {
+    struct Interval {
         std::size_t new_lb;
         std::size_t new_rb;
     };
 
-    using Entry = std::pair<Key, Value>;
+    using Entry = std::pair<LookupKey, Interval>;
     using Bucket = std::vector<Entry>;
 
     const reference_type* ref_ = nullptr;
     const suffix_array_type* sa_ = nullptr;
-    std::size_t bucket_size_ = 256;
+
+    // Used to map lb to a bucket:
+    // bucket_index = lb / bucket_divisor_.
+    // This is not the number of entries allowed in a bucket.
+    std::size_t bucket_divisor_ = 256;
+
     std::vector<Bucket> table_;
     std::size_t hits_ = 0;
     std::size_t misses_ = 0;
@@ -79,13 +82,15 @@ private:
 
 public:
     /**
-     * Bind this cache to exactly one (reference, suffix-array) pair 
+     * Bind this cache to exactly one (reference, suffix-array) pair.
      */
     explicit CachedRLZParser(
         const reference_type& ref,
         const suffix_array_type& sa,
-        std::size_t bucket_size = 256
-    ) : ref_(&ref), sa_(&sa), bucket_size_(bucket_size == 0 ? 256 : bucket_size) {
+        std::size_t bucket_divisor = 256
+    ) : ref_(&ref),
+        sa_(&sa),
+        bucket_divisor_(bucket_divisor == 0 ? 256 : bucket_divisor) {
         if (ref.empty()) {
             throw std::invalid_argument("CachedRLZParser: reference is empty");
         }
@@ -96,7 +101,7 @@ public:
     }
 
     /**
-     * File loading
+     * File loading.
      */
     template <typename T>
     static std::vector<T> read_file(const char* filename) {
@@ -104,9 +109,9 @@ public:
     }
 
     /**
-     * binarySearchLB:  The useful cached unit for RLZ is the
-     * combined interval transition,computeLZFactorAt always needs both
-     * LB and RB before continuing.
+     * binarySearchLB: The useful cached unit for RLZ is the combined interval
+     * transition, because computeLZFactorAt always needs both LB and RB before
+     * continuing.
      */
     std::optional<std::int64_t> binarySearchLB(
         const reference_type& ref,
@@ -135,9 +140,9 @@ public:
     }
 
     /**
-     * Cached equivalent of the rlz's computeLZFactorAt(input, ref, sa, pos).
-     * It caches only interval refinements; failed refinements are not cached**/
-
+     * Cached equivalent of RLZ computeLZFactorAt(input, ref, sa, pos).
+     * It caches only interval refinements; failed refinements are not cached.
+     */
     factor_type computeLZFactorAt(
         const input_type& input,
         const reference_type& ref,
@@ -169,12 +174,12 @@ public:
                     break;
                 }
             } else {
-                Value v{};
+                Interval cached_interval{};
                 const T1 c = input.at(j);
 
-                if (lookup(nlb, nrb, offset, c, v)) {
-                    nlb = v.new_lb;
-                    nrb = v.new_rb;
+                if (lookup(nlb, nrb, offset, c, cached_interval)) {
+                    nlb = cached_interval.new_lb;
+                    nrb = cached_interval.new_rb;
                 } else {
                     const auto opt_lb = ::binarySearchLB<T1, T2>(
                         *ref_, *sa_,
@@ -220,7 +225,7 @@ public:
     }
 
     /**
-     * Cached equivalent of the lz's lzFactorize(input, ref, sa).
+     * Cached equivalent of lzFactorize(input, ref, sa).
      * The whole factor list is not cached; only the internal suffix-array
      * interval transitions are cached.
      */
@@ -273,10 +278,12 @@ public:
         info.current_size = entries_;
         info.bucket_count = table_.size();
         info.max_bucket_size = max_bucket_size();
+
         const std::size_t total = hits_ + misses_;
         info.hit_rate = total == 0 ? 0.0 : static_cast<double>(hits_) / static_cast<double>(total);
         info.load_factor = table_.empty() ? 0.0 : static_cast<double>(entries_) / static_cast<double>(table_.size());
         info.approx_bytes = table_.size() * sizeof(Bucket) + entries_ * sizeof(Entry);
+
         return info;
     }
 
@@ -284,7 +291,7 @@ private:
     void rebuild_table() {
         const std::size_t buckets = std::max<std::size_t>(
             1,
-            (ref_->size() + bucket_size_ - 1) / bucket_size_
+            (ref_->size() + bucket_divisor_ - 1) / bucket_divisor_
         );
         table_.clear();
         table_.resize(buckets);
@@ -299,27 +306,29 @@ private:
     }
 
     std::size_t bucket_index(const std::size_t lb) const {
-        return lb / bucket_size_;
+        return lb / bucket_divisor_;
     }
 
-    Key make_key(const std::size_t lb, const std::size_t rb,
-                 const std::size_t offset, const T1 symbol) const {
-        return Key{lb % bucket_size_, rb, offset, symbol};
+    LookupKey make_key(const std::size_t lb,
+                       const std::size_t rb,
+                       const std::size_t offset,
+                       const T1 symbol) const {
+        return LookupKey{lb % bucket_divisor_, rb, offset, symbol};
     }
 
-    bool lookup(const std::size_t lb, const std::size_t rb,
-                const std::size_t offset, const T1 symbol,
-                Value& out) {
+    bool lookup(const std::size_t lb,
+                const std::size_t rb,
+                const std::size_t offset,
+                const T1 symbol,
+                Interval& cached_interval) {
         const std::size_t b = bucket_index(lb);
-        if (b >= table_.size()) {
-            ++misses_;
-            return false;
-        }
+        assert(b < table_.size());
 
-        const Key key = make_key(lb, rb, offset, symbol);
-        for (const auto& kv : table_[b]) {
-            if (kv.first == key) {
-                out = kv.second;
+        const LookupKey key = make_key(lb, rb, offset, symbol);
+
+        for (const auto& [entry_key, entry_interval] : table_[b]) {
+            if (entry_key == key) {
+                cached_interval = entry_interval;
                 ++hits_;
                 return true;
             }
@@ -329,16 +338,16 @@ private:
         return false;
     }
 
-    void insert(const std::size_t lb, const std::size_t rb,
-                const std::size_t offset, const T1 symbol,
-                const std::size_t new_lb, const std::size_t new_rb) {
+    void insert(const std::size_t lb,
+                const std::size_t rb,
+                const std::size_t offset,
+                const T1 symbol,
+                const std::size_t new_lb,
+                const std::size_t new_rb) {
         const std::size_t b = bucket_index(lb);
-        if (b >= table_.size()) {
-            // Defensive only. With a valid suffix-array interval this should not happen.
-            table_.resize(b + 1);
-        }
+        assert(b < table_.size());
 
-        table_[b].emplace_back(make_key(lb, rb, offset, symbol), Value{new_lb, new_rb});
+        table_[b].emplace_back(make_key(lb, rb, offset, symbol), Interval{new_lb, new_rb});
         ++entries_;
     }
 
